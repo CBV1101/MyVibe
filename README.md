@@ -105,3 +105,11 @@ The extension popup contains **Explore archive insights (Pro preview)**, opening
 This is a preview of a planned paid feature; **there is no billing, entitlement enforcement, public profile, account sync, or platform archive adapter yet**. User imports are unverified and cannot represent a complete account's posting history. In particular, never automatically publish this estimated archive score. Limits: 8 MB / 5,000 messages / 4,000 characters per message.
 
 Run `npm test` for archive-parser and scoring regression tests.
+
+## Opt-in context-aware AI prototype
+
+This build adds an optional AI-powered interpretation step through a locally running, token-protected Node companion. By default AI is **disabled**. Users must configure a local token and deliberately click **Analyze with AI** on a draft; normal typing stays completely offline. The AI provides an interpretation, confidence, and optional meaning-preserving rewrite without ever modifying the user's text automatically or changing their public score.
+
+The companion stores no drafts, holds the provider API key only on the server, and uses the Responses API with structured JSON and `store: false`. This is for developer testing; it is **not a production authentication or payment system**. See [AI companion setup and privacy](docs/ai-companion.md).
+
+Run `npm test` to test provider validation and local service security without making real API calls.
