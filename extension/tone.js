@@ -18,7 +18,6 @@
   [/\bnobody cares about you\b/gi,"I don't think that addresses the issue"],
   [/\byou(?:'re| are)\s+(?:an?\s+)?(?:idiot|moron|loser|dumbass|imbecile|stupid)\b/gi,"I disagree with your reasoning"],
   [/\b(?:that|your|this)\s+(?:argument|point|opinion|take)\s+(?:is|was|sounds)\s+(?:just\s+)?(?:ridiculous|laughable|absurd)\b/gi,"I disagree with that argument because…"],
-  [/\bno offense,?\s+but\s*/gi,""]
  ];
  function analyze(value){
   const text=String(value||"").trim();
