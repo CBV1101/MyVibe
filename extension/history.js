@@ -10,7 +10,7 @@
  function rollingScore(samples){
   let score=50;
   for(const s of samples){
-   if(s.schemaVersion!==3||!Number.isFinite(s.score))continue;
+   if(!(s.schemaVersion===4&&s.evidenceType==="draft_sample"&&s.verified===false)||!Number.isFinite(s.score))continue;
    score=nextScore(score,s.score);
   }
   return Math.round(score*10)/10;

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MyVibe",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Privacy-first writing tone coach and vibe score prototype",
   "permissions": [
     "storage"
@@ -21,6 +21,7 @@
       "js": [
         "tone.js",
         "review.js",
+        "evidence.js",
         "content.js"
       ],
       "run_at": "document_idle"

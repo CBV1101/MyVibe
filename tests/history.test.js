@@ -13,9 +13,13 @@ test("positive messages reward, neutral messages normalize, attacks decrease",()
 });
 test("only current-schema records count",()=>{
  assert.equal(rollingScore([{schemaVersion:2,score:100}]),50);
- assert.equal(rollingScore([{schemaVersion:3,score:90}]),53.2);
+ assert.equal(rollingScore([{schemaVersion:4,evidenceType:"draft_sample",verified:false,score:90}]),53.2);
 });
 test("invalid values cannot corrupt scores",()=>{
  assert.throws(()=>nextScore(80,NaN));
  assert.throws(()=>nextScore(80,40,2));
+});
+
+test("self-claimed verified records do not count toward private draft score",()=>{
+ assert.equal(rollingScore([{schemaVersion:4,evidenceType:"published",verified:true,score:100}]),50);
 });

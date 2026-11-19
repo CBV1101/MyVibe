@@ -119,3 +119,13 @@ Run `npm test` to test provider validation and local service security without ma
 The AI composer includes optional manually pasted conversation context, a review preview, and an explicit **Use AI wording** action. Changes to the draft/editor/context invalidate an older AI rewrite to prevent stale results from overwriting text. AI results remain advisory and do not change the saved historical score. Local scoring stays on by default, independent from the optional AI companion.
 
 The composer now ignores its own context field when detecting social-media editors, preventing the panel from accidentally treating its own textarea as a social-media draft. The panel also positions itself more safely on narrow screens. See `docs/ai-companion.md`.
+
+## Private score evidence and user data controls (v0.5)
+
+MyVibe separates **private draft practice** from **externally verified published-message reputation**. All existing samples are user-selected and cannot establish a public reputation. Newly saved samples carry `evidenceType: "draft_sample"`, `verified: false`, and a scoring model version. A user-provided JSON field claiming `verified: true` is never sufficient proof of publication or account ownership.
+
+The extension popup includes **My data and score evidence**, where users can view the number of recognized private samples, export locally stored scoring metadata as JSON (without the AI companion token), or delete all local score samples and optional AI configuration. Original drafts are not stored in scoring history. Older scoring schema entries remain exportable but are not silently mixed into new scores because model changes would make them incomparable.
+
+Public badges remain disabled until there is real account authentication, platform-compliant ownership verification, server-issued evidence with anti-replay protections, consent and revocation controls, and careful scoring quality validation. No unverified draft score is publishable.
+
+The new `extension/evidence.js` module enforces this boundary and includes regression tests. The product's future score must avoid self-selected sample gaming and permit meaningful correction and deletion.
