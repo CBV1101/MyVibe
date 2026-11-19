@@ -17,7 +17,8 @@ async function setup(fetchPosts,run){
   const callback=await fetch(base+"/oauth/callback?code=test",{headers:{Cookie:"mv_oauth="+pending}});
   assert.equal(callback.status,200);
   const sid=(callback.headers.get("set-cookie")||"").match(/mv_session=([^;]+)/)?.[1];
-  await run({base,headers:{Cookie:"mv_session="+sid}});
+  const account=await (await fetch(base+"/account",{headers:{Cookie:"mv_session="+sid}})).json();
+  await run({base,headers:{Cookie:"mv_session="+sid,"x-myvibe-csrf":account.csrf}});
  }finally{await new Promise(resolve=>server.close(resolve))}
 }
 test("post review only uses authenticated DID and never enables public scoring",async()=>{
@@ -51,5 +52,27 @@ test("same-session repeat requests are rate-limited",async()=>{
  await setup(async owner=>({did:owner,posts:[]}),async({base,headers})=>{
   assert.equal((await fetch(base+"/account/posts",{headers})).status,200);
   assert.equal((await fetch(base+"/account/posts",{headers})).status,429);
+ });
+});
+
+test("read-only account posts require session CSRF header",async()=>{
+ await setup(async owner=>({did:owner,posts:[]}),async({base,headers})=>{
+  const missing={Cookie:headers.Cookie};
+  assert.equal((await fetch(base+"/account/posts",{headers:missing})).status,403);
+  assert.equal((await fetch(base+"/account/posts",{headers:{...headers,"x-myvibe-csrf":"forged"}})).status,403);
+  assert.equal((await fetch(base+"/account/posts",{headers})).status,200);
+ });
+});
+test("untrusted post source cannot override public score fields or return unbounded content",async()=>{
+ await setup(async owner=>({did:owner,posts:[],publicScore:100,publicBadgeEnabled:true,verifiedAccountSession:false,secret:"bad"}),async({base,headers})=>{
+  const res=await fetch(base+"/account/posts",{headers});
+  const payload=await res.json();
+  assert.equal(payload.publicScore,null);assert.equal(payload.publicBadgeEnabled,false);
+  assert.equal(payload.secret,undefined);
+ });
+});
+test("reject oversized post strings even if author DID matches",async()=>{
+ await setup(async owner=>({did:owner,posts:[{authorDid:owner,uri:"at://"+owner+"/app.bsky.feed.post/x",text:"x".repeat(5000)}]}),async({base,headers})=>{
+  assert.equal((await fetch(base+"/account/posts",{headers})).status,502);
  });
 });
