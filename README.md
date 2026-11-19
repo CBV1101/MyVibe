@@ -129,3 +129,16 @@ The extension popup includes **My data and score evidence**, where users can vie
 Public badges remain disabled until there is real account authentication, platform-compliant ownership verification, server-issued evidence with anti-replay protections, consent and revocation controls, and careful scoring quality validation. No unverified draft score is publishable.
 
 The new `extension/evidence.js` module enforces this boundary and includes regression tests. The product's future score must avoid self-selected sample gaming and permit meaningful correction and deletion.
+
+## Read-only public Bluesky import (v0.6)
+
+In **Archive Insights**, paste a public Bluesky handle (for example, `example.bsky.social`) and explicitly select **Fetch public posts**. The extension queries the public Bluesky AppView over HTTPS to resolve the profile's DID and load up to three pages of public author-feed posts (a maximum of 300 entries before filtering). It excludes reposts, unrelated authors, duplicate AT URIs, invalid posts, and non-text records. Results are chronological and passed into the existing per-post private explanation dashboard.
+
+- No password, OAuth token, private-message permission or post/write permission is requested; public posts can be browsed by anyone.
+- No imported text is written to extension storage or sent to the MyVibe backend. Analysis happens locally in the temporary Insights page. Reloading or clearing discards it.
+- Public profile lookup and post attribution by DID are **not proof that the MyVibe user owns that Bluesky account**; this is not a connected account, and no score can be published.
+- Author feeds may exclude deleted/moderated content and be incomplete; reposts are excluded; quality is still limited by the heuristic engine.
+- API reliability, throttling and CORS/extension host-permission differences require browser QA before beta. Bluesky's public endpoint is documented at [public Bluesky API](https://docs.bsky.app/docs/api/app-bsky-feed-get-author-feed).
+- For an actual public MyVibes badge we still need account-owner authentication, approved score publication, completeness rules, and permission revocation.
+
+The importer is tested using mocked API responses; tests never depend on the live Bluesky network.
