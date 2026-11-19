@@ -66,6 +66,7 @@ test("typing, focus and saved draft do not send AI or record raw text",async t=>
 test("AI request is explicit and context is included only on click",async t=>{
  const page=await setup(t);
  await draft(page,"I think you are wrong.");
+ await page.locator("[data-context] summary").click();
  await page.locator("[data-context-value]").fill("We were debating urban planning.");
  assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
  await page.locator("[data-ai]").click();
@@ -95,6 +96,7 @@ test("stale AI answer cannot overwrite a changed draft",async t=>{
 test("composer's internal context textarea never becomes target editor",async t=>{
  const page=await setup(t);
  await draft(page,"You are dumb.");
+ await page.locator("[data-context] summary").click();
  await page.locator("[data-context-value]").fill("Context belongs here");
  await page.locator("[data-context-value]").focus();
  assert.match(await page.locator("[data-status]").textContent(),/Draft vibe:/);
