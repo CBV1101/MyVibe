@@ -166,3 +166,7 @@ The OAuth development service also serves a simple browser page at `http://127.0
 ## OAuth local onboarding improvement
 
 The account data page can now open a local Bluesky OAuth console without moving credentials into the extension. The OAuth development server defaults to the AT Protocol `http://localhost` virtual-client exception, supported by some authorization servers. Set `MYVIBE_ATPROTO_CLIENT_ID` to a real HTTPS-hosted client metadata URL if necessary. This does not enable cross-device identity, account-based private storage, public badges or authenticated scoring; live end-to-end OAuth QA remains pending.
+
+## Authenticated, private Bluesky post review
+
+The local OAuth account console now offers **Analyze my recent public posts** after a successful account login. The server fetches the selected public post sample by the authenticated session DID (never by an arbitrary user-entered handle); the console scores messages privately using MyVibe's existing heuristic engine. The result is temporary and incomplete, and **does not authorize or enable public scores or badges**. See [OAuth development setup](docs/bluesky-oauth.md).
