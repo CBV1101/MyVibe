@@ -5,6 +5,11 @@
 <p>This local development page uses Bluesky's official OAuth login. Signing in verifies account control for this session only; it does <strong>not</strong> publish any Vibe Score.</p>
 <section><h2>Connection status</h2><div id="status" role="status">Checking local session…</div><p id="did"></p><p id="score-policy"><strong>Public score:</strong> Disabled. Your draft scores are always private.</p></section>
 <section id="connect-section"><h2>Connect</h2><form id="connect-form" action="/oauth/start" method="get"><label for="handle">Your Bluesky handle</label><input id="handle" name="handle" type="text" placeholder="yourname.bsky.social" required maxlength="253" autocomplete="off"><button type="submit">Continue to Bluesky OAuth</button></form><p>Development login can use the AT Protocol localhost client-ID exception if the provider supports it. A hosted HTTPS client-metadata URL is an alternative. No password is entered into MyVibes.</p></section>
-<section id="connected-section" hidden><h2>Disconnect</h2><p>Disconnect removes this local account session. No public profile or score is published.</p><button id="disconnect" type="button">Disconnect local account</button><p id="disconnect-status" role="status"></p></section>
+<section id="connected-section" hidden><h2>Review your published posts privately</h2>
+<p>Only a bounded sample of public posts attributed to your authenticated Bluesky DID is retrieved. Nothing is persisted here. The resulting score is experimental and never published.</p>
+<button id="review-posts" type="button">Analyze my recent public posts</button>
+<p id="review-status" role="status"></p>
+<div id="review-summary" hidden><strong id="review-score"></strong><p id="review-coverage"></p><div id="review-entries"></div><button id="clear-review" type="button">Clear analysis</button></div>
+<h2>Disconnect</h2><p>Disconnect removes this local account session. No public profile or score is published.</p><button id="disconnect" type="button">Disconnect local account</button><p id="disconnect-status" role="status"></p></section>
 <footer>This page only connects to the local service at 127.0.0.1. No subscription, profile sharing or public badge service exists yet.</footer>
-</main><script src="/account-ui.js"></script></body></html>
+</main><script src="/tone.js"></script><script src="/history.js"></script><script src="/archive.js"></script><script src="/trace.js"></script><script src="/account-ui.js"></script></body></html>
