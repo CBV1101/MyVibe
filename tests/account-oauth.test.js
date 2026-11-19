@@ -83,9 +83,15 @@ test("local account console is served with strict CSP and same-origin scripts",a
  });
 });
 test("DNS rebinding Host header is blocked",async()=>{
+ const http=require("node:http");
  await setup(async({base})=>{
-  const res=await fetch(base+"/account",{headers:{Host:"attacker.example"}});
-  assert.equal(res.status,403);
+  const status=await new Promise((resolve,reject)=>{
+   const request=http.request(base+"/account",{headers:{Host:"attacker.example"}},response=>{
+    response.resume();response.on("end",()=>resolve(response.statusCode));
+   });
+   request.on("error",reject);request.end();
+  });
+  assert.equal(status,403);
  });
 });
 test("local account session expires after one hour without becoming public",async()=>{
