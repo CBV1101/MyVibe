@@ -10,6 +10,14 @@
    $("overview").textContent=privateSamples.length+" current-schema private samples · "+untrusted.length+" legacy or unrecognized records · "+(data.aiEnabled?"Optional AI enabled":"Optional AI disabled");
   });
  }
+ $("open-oauth").addEventListener("click",()=>{
+  // Open the local first-party console, never fetch credentials into the extension.
+  chrome.tabs.create({url:"http://127.0.0.1:4318/"},()=>{
+   $("oauth-status").textContent=chrome.runtime.lastError?
+    "Could not open the local account console.":
+    "Local account console opened. Run npm run oauth:dev if the page cannot connect.";
+  });
+ });
  $("save-sharing").addEventListener("click",()=>{const visibility=$("sharing-interest").checked?"interested":"private";chrome.storage.local.set({sharingPreference:{visibility}},refresh);});
  $("export").addEventListener("click",async ()=>{
   const data=await read();
