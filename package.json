@@ -5,7 +5,8 @@
   "description": "MyVibe browser extension MVP",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "ai:dev": "node server/server.js"
+    "ai:dev": "node server/server.js",
+    "check": "node --check extension/content.js && node --check extension/background.js && node --check extension/review.js && node --check server/server.js && node --check extension/ai-settings.js"
   },
   "engines": {
     "node": ">=20"

@@ -25,3 +25,11 @@ Requires Node.js 20+, an OpenAI API key and a Responses API-capable model availa
 ## Limitations
 
 No conversation thread is automatically captured or transmitted; context is optional on the server side for future consent-based workflows. AI can still produce mistaken, biased or misleading interpretations. The extension's 0–100 history is an experimental **local demo**, not a full social-account audit.
+
+## User-reviewed rewrites and optional conversation context
+
+The composer now lets users **paste context deliberately** (up to 1,500 characters) before invoking AI. No thread scraping or context harvesting happens automatically. Both draft and pasted context are sent only when the user explicitly clicks **Analyze with AI**.
+
+AI suggestions appear as a **preview** in the composer. The original draft is left untouched until the user explicitly clicks **Use AI wording**. The extension rejects the response or rewrite if the draft, input editor, or supplied context changed after the request. The browser also validates the returned fields and neutralizes low-confidence classifications.
+
+The optional context is held in the current page while editing, is cleared when moving to a different editor, and is never stored in score history. Do not paste others' private or sensitive content without appropriate permission.

@@ -113,3 +113,9 @@ This build adds an optional AI-powered interpretation step through a locally run
 The companion stores no drafts, holds the provider API key only on the server, and uses the Responses API with structured JSON and `store: false`. This is for developer testing; it is **not a production authentication or payment system**. See [AI companion setup and privacy](docs/ai-companion.md).
 
 Run `npm test` to test provider validation and local service security without making real API calls.
+
+## AI composer review controls
+
+The AI composer includes optional manually pasted conversation context, a review preview, and an explicit **Use AI wording** action. Changes to the draft/editor/context invalidate an older AI rewrite to prevent stale results from overwriting text. AI results remain advisory and do not change the saved historical score. Local scoring stays on by default, independent from the optional AI companion.
+
+The composer now ignores its own context field when detecting social-media editors, preventing the panel from accidentally treating its own textarea as a social-media draft. The panel also positions itself more safely on narrow screens. See `docs/ai-companion.md`.
