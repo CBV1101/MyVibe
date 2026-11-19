@@ -103,7 +103,7 @@ function createAccountServer({oauth,clock=Date.now,fetchPosts=getOwnedPosts}){
     const result=await fetchPosts(connected.did);
     // Revalidate even when the data supplier is swapped during tests or upgrades.
     if(result?.did!==connected.did||!Array.isArray(result?.posts)||
-       result.posts.length>300||result.posts.some(p=>p.authorDid!==connected.did||typeof p.text!=="string"||p.text.length>4000||!p.text.trim()||typeof p.uri!=="string"||!p.uri.startsWith("at://"+connected.did+"/app.bsky.feed.post/"))
+       result.posts.length>300||result.posts.some(p=>p.authorDid!==connected.did||typeof p.text!=="string"||p.text.length>4000||!p.text.trim()||typeof p.uri!=="string"||!p.uri.startsWith("at://"+connected.did+"/app.bsky.feed.post/")))
       throw new Error("Post source attribution mismatch");
     return send(200,{source:"bluesky_public_appview",did:connected.did,posts:result.posts,complete:false,warning:"This feed is incomplete and scores are private heuristic estimates.",hasMore:Boolean(result.hasMore),verifiedAccountSession:true,publicScore:null,publicBadgeEnabled:false});
    }catch(_error){return send(502,{error:"Could not retrieve account posts"})}
