@@ -8,6 +8,16 @@ const pathModule=require("node:path");
 const {randomBytes,timingSafeEqual}=require("node:crypto");
 const {cleanHandle,isDid}=require("../extension/bluesky.js");
 const MAX_PENDING=100,TTL=10*60*1000,SESSION_TTL=60*60*1000;
+const LOCAL_REDIRECT_URI="http://127.0.0.1:4318/oauth/callback";
+const LOCAL_CLIENT_ID="http://localhost?redirect_uri="+encodeURIComponent(LOCAL_REDIRECT_URI)+"&scope=atproto";
+function resolveClientId(value){
+ const proposed=String(value||"").trim();
+ if(!proposed||proposed==="localhost")return LOCAL_CLIENT_ID;
+ const parsed=new URL(proposed);
+ if(parsed.protocol!=="https:"||!parsed.hostname||parsed.username||parsed.password||parsed.hash)
+  throw new Error("MYVIBE_ATPROTO_CLIENT_ID must be a public HTTPS metadata URL or 'localhost'");
+ return parsed.toString();
+}
 const STATIC={"/":"account.html","/account-ui.js":"account-ui.js","/account.css":"account.css"};
 const token=()=>randomBytes(32).toString("base64url");
 function equal(a,b){if(typeof a!=="string"||typeof b!=="string")return false;const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&x.length>0&&timingSafeEqual(x,y);}
@@ -95,9 +105,9 @@ function createAccountServer({oauth,clock=Date.now}){
 }
 function createStore(){const m=new Map();return {set:async(k,v)=>{m.set(k,v)},get:async k=>m.get(k),del:async k=>{m.delete(k)}};}
 async function makeOAuthClient(clientId){
- if(!/^https:\/\/[^/?#]+(?:\/[^?#]*)?$/.test(clientId))throw new Error("MYVIBE_ATPROTO_CLIENT_ID must be a hosted HTTPS metadata document URL");
+ const resolved=resolveClientId(clientId);
  const {NodeOAuthClient}=await import("@atproto/oauth-client-node");
- return NodeOAuthClient.fromClientId({clientId,stateStore:createStore(),sessionStore:createStore()});
+ return NodeOAuthClient.fromClientId({clientId:resolved,stateStore:createStore(),sessionStore:createStore()});
 }
 if(require.main===module)(async()=>{
  try{
@@ -108,4 +118,4 @@ if(require.main===module)(async()=>{
   server.listen(4318,"127.0.0.1",()=>process.stdout.write("MyVibe OAuth development server on 127.0.0.1:4318\n"));
  }catch(e){process.stderr.write("OAuth setup failed: "+e.message+"\n");process.exitCode=1}
 })();
-module.exports={createAccountServer,makeOAuthClient,createStore,equal};
+module.exports={createAccountServer,makeOAuthClient,createStore,equal,resolveClientId,LOCAL_CLIENT_ID,LOCAL_REDIRECT_URI};
