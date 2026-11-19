@@ -152,3 +152,9 @@ The data controls page lets a person record **interest in future public sharing*
 A genuine Bluesky ownership connection must use AT Protocol OAuth through an authorized client with verified identity, distinct from this read-only public lookup. We must deploy client metadata and implement the authorization, callback, token/session security and consent/revocation flow before any public badge may be enabled. See the [official AT Protocol OAuth overview](https://atproto.com/guides/about-oauth).
 
 CSV export escapes formulas for safer opening in spreadsheet applications. The user remains responsible for sharing any downloaded files.
+
+## Account linking foundation (developer only)
+
+A separate local AT Protocol OAuth service is included in `server/account-oauth.js`, using the official Node OAuth client for protocol-level PKCE, PAR and DPoP. It checks callback state against a short-lived browser session, exposes a private linked DID, supports local disconnect/revocation, and **never publishes an account score or turns on a badge**. It needs real externally hosted HTTPS client metadata and a consenting test account before a live login can work. See [setup and restrictions](docs/bluesky-oauth.md).
+
+This is not yet integrated with extension account settings or any production backend. Do not interpret the local OAuth prototype as a launch-ready identity system. Authentication is separate from the completeness, consent, contestability, and anti-manipulation requirements of public reputation scoring.
