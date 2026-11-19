@@ -1,7 +1,7 @@
 function refresh(){
  chrome.storage.local.get({myvibeHistory:[]},({myvibeHistory})=>{
   // Never mix scores from incompatible scoring versions.
-  const posts=myvibeHistory.filter(p=>p.schemaVersion===3&&Number.isFinite(p.score));
+  const posts=myvibeHistory.filter(p=>MyVibeEvidence.isLocalSample(p));
   const score=MyVibeHistory.rollingScore(posts);
   document.getElementById("score").textContent=score.toFixed(1);
   document.getElementById("score-label").textContent=MyVibesGauge.label(score);
@@ -12,6 +12,7 @@ function refresh(){
   document.getElementById("badge-container").replaceChildren(MyVibesGauge.createBadge(score));
  });
 }
+document.getElementById("data-controls").addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("data.html")}));
 document.getElementById("ai-settings").addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("ai-settings.html")}));
 document.getElementById("insights").addEventListener("click",()=>chrome.runtime.openOptionsPage());
 document.getElementById("clear").addEventListener("click",()=>{
