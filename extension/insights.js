@@ -1,0 +1,47 @@
+(() => {
+ "use strict";
+ const $=id=>document.getElementById(id);
+ let report=null;
+ const sample=[
+  {text:"I disagree with that decision because the evidence suggests another approach.",date:"2026-09-01"},
+  {text:"Congratulations! You deserve this!",date:"2026-09-04"},
+  {text:"Your post is dumb",date:"2026-09-08"},
+  {text:"Keep going! You got this!",date:"2026-09-14"},
+  {text:"You're a fucking idiot",date:"2026-09-18"},
+  {text:"I appreciate you",date:"2026-09-22"}
+ ];
+ const fmt=n=>n>0?"+"+n.toFixed(2):n.toFixed(2);
+ function setError(error){$("error").hidden=!error;$("error").textContent=error?String(error.message||error):"";}
+ function render(){
+  $("results").hidden=!report;if(!report)return;
+  $("score").textContent=report.score.toFixed(1);
+  $("count").textContent=report.count;
+  $("positive").textContent=report.positive;
+  $("negative").textContent=report.negative;
+  $("overview").textContent=report.negative+" messages had negative scoring signals, "+report.positive+" had positive signals and "+report.neutral+" were neutral. All numbers describe this imported sample, not your verified public score.";
+  $("categories").replaceChildren();
+  for(const c of report.categories.slice(0,10)){const tag=document.createElement("span");tag.className="tag";tag.textContent=c.id.replace(/-/g," ")+": "+c.count;$("categories").append(tag);}
+  const selected=$("filter").value;
+  $("timeline").replaceChildren();
+  for(const e of report.timeline.filter(e=>selected==="all"||selected==="positive"&&e.score>50||selected==="negative"&&e.score<50||selected==="neutral"&&e.score===50).slice(-500).reverse()){
+   const node=document.createElement("article");node.className="entry";
+   const head=document.createElement("div");head.className="entry-head";
+   const label=document.createElement("strong");label.textContent=e.date?new Date(e.date).toLocaleDateString():"Message "+e.index;
+   const delta=document.createElement("span");delta.className="delta "+(e.delta>0?"positive":e.delta<0?"negative":"");delta.textContent=fmt(e.delta)+" points";
+   head.append(label,delta);
+   const text=document.createElement("p");text.className="message";text.textContent=e.text;
+   const reasons=document.createElement("div");reasons.className="reasons";reasons.textContent=e.reasons.length?e.reasons.map(r=>r.label+" ("+r.confidence+")").join(" · "):"No positive or negative signals detected";
+   const scoreline=document.createElement("div");scoreline.className="scoreline";scoreline.textContent="Message "+e.score+"/100 · Overall "+e.previous.toFixed(2)+" → "+e.after.toFixed(2);
+   node.append(head,text,reasons,scoreline);$("timeline").append(node);
+  }
+ }
+ function load(records){report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);setError(null);render();}
+ $("archive").addEventListener("change",async(e)=>{
+  const file=e.target.files?.[0];if(!file)return;
+  try{if(file.size>8*1024*1024)throw new Error("Maximum file size is 8 MB");load(MyVibeArchive.parseArchive(await file.text(),file.name));}
+  catch(err){report=null;render();setError(err);}
+ });
+ $("example").addEventListener("click",()=>{load(sample.map((r,i)=>({...r,position:i})));});
+ $("reset").addEventListener("click",()=>{report=null;$("archive").value="";setError(null);render();});
+ $("filter").addEventListener("change",render);
+})();
