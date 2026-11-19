@@ -170,3 +170,7 @@ The account data page can now open a local Bluesky OAuth console without moving 
 ## Authenticated, private Bluesky post review
 
 The local OAuth account console now offers **Analyze my recent public posts** after a successful account login. The server fetches the selected public post sample by the authenticated session DID (never by an arbitrary user-entered handle); the console scores messages privately using MyVibe's existing heuristic engine. The result is temporary and incomplete, and **does not authorize or enable public scores or badges**. See [OAuth development setup](docs/bluesky-oauth.md).
+
+## Scoring calibration gate
+
+The heuristic now avoids penalizing clearly attributed, short quoted hostile remarks in a narrow set of reported-speech constructions, while still detecting direct insults outside those quotes. Run `npm run evaluate` to check the **70-example curated regression dataset** (neutral/negative/positive/advisory). CI fails on mislabeled outcomes, prioritizing no false positives on explicitly neutral speech. This is **not a measure of real-world scoring accuracy or fairness**; independent human annotation and more comprehensive evaluation remain mandatory before public scores. See [evaluation scope and release requirements](evaluation/README.md).
