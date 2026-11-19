@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "ai:dev": "node server/server.js",
-    "check": "node --check extension/content.js && node --check extension/background.js && node --check extension/review.js && node --check server/server.js && node --check extension/ai-settings.js && node --check extension/evidence.js && node --check extension/data.js && node --check extension/bluesky.js && node --check extension/insights.js && node --check extension/trace.js && node --check extension/sharing.js && node --check server/account-oauth.js && node --check server/account-ui.js && node --check extension/data.js && node --check server/owned-posts.js",
+    "check": "node --check extension/content.js && node --check extension/background.js && node --check extension/review.js && node --check server/server.js && node --check extension/ai-settings.js && node --check extension/evidence.js && node --check extension/data.js && node --check extension/bluesky.js && node --check extension/insights.js && node --check extension/trace.js && node --check extension/sharing.js && node --check server/account-oauth.js && node --check server/account-ui.js && node --check extension/data.js && node --check server/owned-posts.js && node --check server/owner-review.js",
     "oauth:dev": "node server/account-oauth.js"
   },
   "engines": {

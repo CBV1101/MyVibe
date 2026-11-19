@@ -80,6 +80,7 @@ test("local account console is served with strict CSP and same-origin scripts",a
   const html=await page.text();assert.match(html,/Bluesky/);assert.match(html,/account-ui.js/);
   const script=await fetch(base+"/account-ui.js");assert.equal(script.status,200);assert.match(script.headers.get("content-type"),/javascript/);
   const css=await fetch(base+"/account.css");assert.equal(css.status,200);assert.match(css.headers.get("content-type"),/css/);
+  const review=await fetch(base+"/owner-review.js");assert.equal(review.status,200);assert.match(await review.text(),/validatePayload/);
  });
 });
 test("DNS rebinding Host header is blocked",async()=>{
