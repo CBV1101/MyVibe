@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "MyVibe",
+  "version": "0.1.0",
+  "description": "Privacy-first writing tone coach and vibe score prototype",
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://www.reddit.com/*",
+        "https://www.threads.net/*",
+        "https://bsky.app/*"
+      ],
+      "js": [
+        "tone.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
