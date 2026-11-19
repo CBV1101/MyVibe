@@ -35,7 +35,7 @@
   // Guard formula injection when opening exports in spreadsheet software.
   return [header,...rows].map(row=>row.map(value=>{
    const s=String(value??"");
-   return quoteCsv(/^[\t\r\n ]*[=+\-@]/.test(s)?"'"+s:s);
+   return quoteCsv(typeof value==="string"&&/^[\t\r\n ]*[=+\-@]/.test(s)?"'"+s:s);
   }).join(",")).join("\r\n");
  }
  root.MyVibeTrace={postLink,sourceSummary,exportDocument,reportCsv};
