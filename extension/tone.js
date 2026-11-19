@@ -1,4 +1,4 @@
-/* MyVibe v0.4: neutral baseline with positive and negative signals. Local heuristic prototype, not AI. */
+/* MyVibe v0.5: meaning-first, neutral-default heuristic prototype (not AI). */
 (function(root){
  "use strict";
  const patterns=[
@@ -12,6 +12,16 @@
   {id:"passive-must-be-nice",kind:"constructiveness",weight:0,label:"Possible resentment or sarcasm",confidence:"low",regex:/\bmust be nice(?:\s+to\s+\w+)?[.!]?\s*$/i,interpretation:"This could be read as resentment or a veiled criticism.",tip:"Consider saying directly what concerns you or what you're hoping for."},
   {id:"passive-no-offense",kind:"constructiveness",weight:0,label:"Potentially defensive framing",confidence:"low",regex:/\bno offense,?\s+but\b/i,interpretation:"Readers may expect an insult after 'no offense, but'.",tip:"State your concern directly and respectfully."},
   {id:"passive-sorry-you-feel",kind:"constructiveness",weight:0,label:"Possibly invalidating reply",confidence:"low",regex:/\b(?:i'm|i am)\s+sorry\s+you\s+feel\s+that\s+way\b/i,interpretation:"Some readers may feel their concern is being brushed aside.",tip:"Acknowledge the concern and explain your perspective."}
+ ];
+ const contextualPatterns=[
+  {id:"ambiguous-pride-emoji",kind:"context",weight:0,label:"Possible identity reference",confidence:"low",regex:/\bi (?:don't|do not) like\s*(?:👨‍❤️‍👨|👬|🏳️‍🌈)/iu,interpretation:"Some readers might understand this as rejecting gay people, while others may read it differently.",tip:"If you mean a particular behavior, symbol or idea, consider naming it directly."},
+  {id:"ambiguous-star-emoji",kind:"context",weight:0,label:"Possible religious reference",confidence:"low",regex:/\bi (?:don't|do not) like\s*✡️?/iu,interpretation:"Some readers might interpret this as directed at Jewish people, Judaism or a symbol. Your intent cannot be determined from this alone.",tip:"If you mean a religious teaching, practice or symbol, specifying which one can reduce misunderstanding."}
+ ];
+ const targetedPatterns=[
+  {id:"identity-directed-hate",kind:"respect",weight:50,label:"Identity-directed hostility",confidence:"high",regex:/\b(?:i hate|i despise|i can't stand|i cannot stand)\s+(?:jews|jewish people|christians|muslims|gay people|lesbians|trans people|immigrants|women|men|disabled people)\b/i,interpretation:"This explicitly targets a group of people, not merely an idea or belief.",tip:"Focus criticism on a specific action, idea, or doctrine rather than an identity group."},
+  {id:"severe-personal-insult",kind:"respect",weight:48,label:"Severe personal insult",confidence:"high",regex:/\byou(?:'re| are)\s+(?:a\s+)?(?:fucking|freaking|goddamn)\s+(?:idiot|moron|dumbass)\b/i,interpretation:"This directly attacks a person using an intensified insult.",tip:"Explain what you disagree with without attacking the person."},
+  {id:"direct-dumb-insult",kind:"respect",weight:28,label:"Personal insult",confidence:"high",regex:/\byou(?:'re| are)\s+(?:so\s+)?dumb\b/i,interpretation:"This labels a person rather than addressing their argument.",tip:"Explain why you disagree with the reasoning or claim."},
+  {id:"dismissive-post",kind:"constructiveness",weight:18,label:"Dismissive criticism",confidence:"medium",regex:/\b(?:your|that|this)\s+(?:post|religion|belief|argument|idea|opinion)\s+(?:is|sounds)\s+(?:just\s+)?(?:dumb|stupid)\b/i,interpretation:"This criticizes an idea or post, not someone's identity, but could sound dismissive.",tip:"Consider specifying the part you disagree with and why."}
  ];
  const positivePatterns=[
   {id:"encouragement",weight:18,label:"Encouragement",regex:/\b(?:you(?:'ve| have) got this|keep going|don't give up|you can do it|believe in yourself|i believe in you|you are capable|you got this)\b/i},
@@ -32,15 +42,16 @@
   if(!text)return {score:null,respectfulness:null,constructiveness:null,level:"empty",flags:[],positives:[],suggestion:"",changed:false};
   // Ambiguous phrases trigger at most advisory feedback; they do not lower scores.
   // Heuristics are advisory: quoted speech and context require real semantic evaluation.
-  const flags=patterns.filter(p=>p.regex.test(text)).map(({id,kind,weight,label,confidence,interpretation,tip})=>({id,kind,weight,label,confidence,interpretation,tip}));
+  const flags=[...targetedPatterns,...patterns,...contextualPatterns].filter(p=>p.regex.test(text)).map(({id,kind,weight,label,confidence,interpretation,tip})=>({id,kind,weight,label,confidence,interpretation,tip}));
   // Neutral is the default (50). Heuristics represent message tone, not the person's worth.
   const positives=positivePatterns.filter(p=>p.regex.test(text)).map(({id,weight,label})=>({id,weight,label}));
-  const respectPenalty=flags.filter(f=>f.kind==="respect").reduce((sum,f)=>sum+f.weight,0);
-  const constructPenalty=flags.filter(f=>f.kind==="constructiveness").reduce((sum,f)=>sum+f.weight*0.4,0);
+  // Use the most severe single personal-attack category to avoid double-counting overlapping phrases.
+  const respectPenalty=Math.max(0,...flags.filter(f=>f.kind==="respect").map(f=>f.weight));
+  const constructPenalty=Math.min(20,flags.filter(f=>f.kind==="constructiveness").reduce((sum,f)=>sum+f.weight*0.4,0));
   // Emojis only add minor supportive evidence when an actual positive signal exists.
   const positiveStrength=positives.reduce((sum,p)=>sum+p.weight,0);
-  const emojiBonus=positiveStrength&&/[❤️💚💙💜💛🙌👏🎉😊]/u.test(text)?2:0;
-  const positiveBonus=Math.min(40,positiveStrength+emojiBonus);
+  // Emojis do not earn positive points. They can trigger context-only interpretation notes.
+  const positiveBonus=Math.min(40,positiveStrength);
   let score=Math.round(Math.max(0,Math.min(100,50+positiveBonus-respectPenalty-constructPenalty)));
   // A message containing an explicit personal attack cannot gain a positive rating through flattery.
   if(respectPenalty>0)score=Math.min(score,49);
