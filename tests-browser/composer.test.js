@@ -1,0 +1,113 @@
+"use strict";
+const {test,after}=require("node:test");
+const assert=require("node:assert/strict");
+const {chromium}=require("playwright");
+const path=require("node:path");
+const extension=path.join(__dirname,"../extension");
+let browser;
+async function setup(t){
+ if(!browser)browser=await chromium.launch({headless:true});
+ const context=await browser.newContext({viewport:{width:950,height:720}});
+ t.after(()=>context.close());
+ const page=await context.newPage();
+ await page.route("https://bsky.app/**",route=>{
+  if(route.request().resourceType()==="document")return route.fulfill({status:200,contentType:"text/html",body:'<!doctype html><html><head><title>Composer fixture</title></head><body><textarea id="draft" aria-label="Test social composer"></textarea><div id="other" contenteditable="true" role="textbox"></div></body></html>'});
+  return route.abort();
+ });
+ await page.addInitScript(()=>{
+  window.__myvibeCalls=[];
+  window.__myvibeData={myvibeHistory:[]};
+  window.__myvibePending=[];
+  window.chrome={
+   runtime:{
+    lastError:null,
+    sendMessage:(message,callback)=>{
+     window.__myvibeCalls.push(message);
+     window.__myvibePending.push(callback);
+    }
+   },
+   storage:{local:{
+    get:(defaults,callback)=>callback({...defaults,...window.__myvibeData}),
+    set:(values,callback)=>{Object.assign(window.__myvibeData,values);callback?.()},
+    remove:(key,callback)=>{delete window.__myvibeData[key];callback?.()}
+   }}
+  };
+ });
+ await page.goto("https://bsky.app/");
+ for(const file of ["tone.js","review.js","evidence.js","content.js"])await page.addScriptTag({path:path.join(extension,file)});
+ return page;
+}
+after(async()=>{await browser?.close()});
+async function draft(page,value){
+ await page.locator("#draft").fill(value);
+ await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
+}
+test("composer detects personal attacks and leaves ordinary disagreement neutral",async t=>{
+ const page=await setup(t);
+ await draft(page,"I disagree with your argument.");
+ await page.waitForFunction(()=>document.querySelector("[data-status]")?.textContent.includes("50/100"));
+ assert.match(await page.locator("[data-status]").textContent(),/50\/100/);
+ await draft(page,"You are an idiot.");
+ await page.waitForFunction(()=>document.querySelector("[data-status]")?.textContent.includes("8/100"));
+ assert.match(await page.locator("[data-status]").textContent(),/Consider revising/);
+});
+test("typing, focus and saved draft do not send AI or record raw text",async t=>{
+ const page=await setup(t);
+ await draft(page,"Congratulations! You deserve this!");
+ assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
+ await page.locator("[data-record]").click();
+ const entries=await page.evaluate(()=>window.__myvibeData.myvibeHistory);
+ assert.equal(entries.length,1);
+ assert.equal(entries[0].verified,false);
+ assert.equal(entries[0].evidenceType,"draft_sample");
+ assert.equal(JSON.stringify(entries).includes("Congratulations!"),false);
+ assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
+});
+test("AI request is explicit and context is included only on click",async t=>{
+ const page=await setup(t);
+ await draft(page,"I think you are wrong.");
+ await page.locator("[data-context-value]").fill("We were debating urban planning.");
+ assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
+ await page.locator("[data-ai]").click();
+ const calls=await page.evaluate(()=>window.__myvibeCalls);
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].text,"I think you are wrong.");
+ assert.equal(calls[0].context,"We were debating urban planning.");
+ await page.evaluate(()=>window.__myvibePending.shift()({result:{
+  score:50,confidence:"high",label:"neutral",interpretation:"Normal disagreement",reason:"No attack",rewrite:"I disagree with your conclusion."
+ }}));
+ await page.locator("[data-ai-preview]").waitFor({state:"visible"});
+ assert.equal(await page.locator("#draft").inputValue(),"I think you are wrong.");
+ await page.locator("[data-ai-apply]").click();
+ assert.equal(await page.locator("#draft").inputValue(),"I disagree with your conclusion.");
+});
+test("stale AI answer cannot overwrite a changed draft",async t=>{
+ const page=await setup(t);
+ await draft(page,"Your argument is bad.");
+ await page.locator("[data-ai]").click();
+ await draft(page,"I respectfully disagree.");
+ await page.evaluate(()=>window.__myvibePending.shift()({result:{
+  score:65,confidence:"high",label:"positive",interpretation:"Supportive",reason:"Empathy",rewrite:"Thanks for sharing."
+ }}));
+ assert.equal(await page.locator("[data-ai-preview]").isVisible(),false);
+ assert.equal(await page.locator("#draft").inputValue(),"I respectfully disagree.");
+});
+test("composer's internal context textarea never becomes target editor",async t=>{
+ const page=await setup(t);
+ await draft(page,"You are dumb.");
+ await page.locator("[data-context-value]").fill("Context belongs here");
+ await page.locator("[data-context-value]").focus();
+ assert.match(await page.locator("[data-status]").textContent(),/Draft vibe:/);
+ assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
+});
+test("switching to a new editor invalidates previous AI rewrite",async t=>{
+ const page=await setup(t);
+ await draft(page,"Your argument is bad.");
+ await page.locator("[data-ai]").click();
+ await page.locator("#other").fill("Another editor");
+ await page.evaluate(()=>window.__myvibePending.shift()({result:{
+  score:50,confidence:"high",label:"neutral",interpretation:"Disagreement",reason:"No hostility",rewrite:"Please clarify."
+ }}));
+ assert.equal(await page.locator("[data-ai-preview]").isVisible(),false);
+ assert.equal(await page.locator("#other").textContent(),"Another editor");
+});
