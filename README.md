@@ -91,3 +91,9 @@ A hypothetical rolling score of 80 followed by one recorded message with score `
 ### Known issues
 
 Rule-based language checks miss most nuance, other languages, quotations and complex emoji references. The extension stores only samples explicitly saved by the user, so its **score is a manipulable demo**, not a trustworthy assessment of anybody's posting history. Do not publish or compare these scores as if they were verified. A context-aware AI detector is future work.
+
+## Approved MyVibes visual design
+
+The private extension popup includes a continuous, gapless semicircle meter (deep red → orange → yellow at 50 → light green → saturated green), a needle pointing to the numerical score, and a compact inline-style MyVibes badge with number and micro-gradient. These are generated using a reusable dependency-free SVG/DOM component in `extension/gauge.js`, not a static picture. Every color presentation is paired with the numeric score and an accessible label.
+
+**Privacy boundary:** The badge is a preview in the account owner's extension only. Do **not** inject scores beside other people's usernames yet: we do not have verified account attribution, public-score consent, or a remotely retrievable score service. The future rollout must respect the profile owner's sharing preference, support unknown scores rather than inventing them, and avoid displaying self-saved draft scores as public reputation.

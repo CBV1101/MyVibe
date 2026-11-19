@@ -1,1 +1,17 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MyVibe</title><link rel="stylesheet" href="popup.css"></head><body><main><header><strong>✦ MyVibe</strong><span>Local prototype</span></header><p>Make online conversations more constructive, without silencing disagreement.</p><section class="score"><div id="score">—</div><div>My vibe score<small>50 = neutral · encouragement can raise it</small></div></section><section class="stats"><div><strong id="count">0</strong><small>Saved samples</small></div><div><strong id="share">—</strong><small>Without detected attacks</small></div></section><p id="empty">When writing on a supported site, select “Add to my vibe history” in the tone coach to build your score.</p><label>Public score <small>Unavailable until accounts and consent controls are built</small><input type="checkbox" disabled></label><button id="clear">Delete local vibe history</button><footer>Demo score starts at 50 and moves gradually with saved samples. Encouragement raises it; attacks lower it. Only local scoring metadata is saved, never message text. This experimental score is not a judgment of character.</footer></main><script src="history.js"></script><script src="popup.js"></script></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MyVibes</title><link rel="stylesheet" href="popup.css"></head>
+<body><main>
+<header><strong>MyVibes</strong><span>Private prototype</span></header>
+<p class="subtitle">Your tone at a glance. Neutral starts at 50.</p>
+<section class="score" aria-label="Your private MyVibes score">
+<div id="gauge-container"></div>
+<div class="score-detail"><strong id="score">50.0</strong><span id="score-label">Neutral</span></div>
+</section>
+<section class="inline-preview"><small>Inline badge preview · only visible to you</small><div id="badge-container"></div></section>
+<section class="stats"><div><strong id="count">0</strong><small>Saved samples</small></div><div><strong id="share">—</strong><small>Without detected attacks</small></div></section>
+<p id="empty">To build your private demo score, save samples using the writing coach on a supported social platform.</p>
+<div class="privacy"><strong>Sharing</strong><small>Public profiles and other users' badges are not enabled. Scores are only visible to you.</small></div>
+<button id="clear">Delete local vibe history</button>
+<footer>Demo score based on manually saved drafts, not verified social-media posts. No message text is stored. The score is experimental and should not be treated as a judgment of character.</footer>
+</main>
+<script src="history.js"></script><script src="gauge.js"></script><script src="popup.js"></script></body></html>
