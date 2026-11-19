@@ -19,7 +19,7 @@ function resolveClientId(value){
   throw new Error("MYVIBE_ATPROTO_CLIENT_ID must be a public HTTPS metadata URL or 'localhost'");
  return parsed.toString();
 }
-const STATIC={"/":"account.html","/account-ui.js":"account-ui.js","/account.css":"account.css","/tone.js":"../extension/tone.js","/history.js":"../extension/history.js","/archive.js":"../extension/archive.js","/trace.js":"../extension/trace.js"};
+const STATIC={"/":"account.html","/account-ui.js":"account-ui.js","/account.css":"account.css","/tone.js":"../extension/tone.js","/history.js":"../extension/history.js","/archive.js":"../extension/archive.js","/trace.js":"../extension/trace.js","/owner-review.js":"owner-review.js"};
 const token=()=>randomBytes(32).toString("base64url");
 function equal(a,b){if(typeof a!=="string"||typeof b!=="string")return false;const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&x.length>0&&timingSafeEqual(x,y);}
 function cookies(req){return Object.fromEntries(String(req.headers.cookie||"").split(";").map(x=>x.trim().split("=")).filter(x=>x.length===2));}
@@ -92,6 +92,8 @@ function createAccountServer({oauth,clock=Date.now,fetchPosts=getOwnedPosts}){
    const site=req.headers["sec-fetch-site"],origin=req.headers.origin;
    if(site&&site!=="same-origin"&&site!=="none")return send(403,{error:"Cross-site request denied"});
    if(origin&&origin!=="http://"+expectedHost)return send(403,{error:"Foreign origin"});
+   // Same-origin page must demonstrate a per-session CSRF token even for read requests.
+   if(!equal(req.headers["x-myvibe-csrf"],connected.csrf))return send(403,{error:"Session validation required"});
    // Do not accept actor, handle or DID query parameters from the caller.
    if([...url.searchParams].length)return send(400,{error:"Account selection is not supported"});
    const now=clock();
@@ -101,9 +103,9 @@ function createAccountServer({oauth,clock=Date.now,fetchPosts=getOwnedPosts}){
     const result=await fetchPosts(connected.did);
     // Revalidate even when the data supplier is swapped during tests or upgrades.
     if(result?.did!==connected.did||!Array.isArray(result?.posts)||
-       result.posts.length>300||result.posts.some(p=>p.authorDid!==connected.did))
+       result.posts.length>300||result.posts.some(p=>p.authorDid!==connected.did||typeof p.text!=="string"||p.text.length>4000||!p.text.trim()||typeof p.uri!=="string"||!p.uri.startsWith("at://"+connected.did+"/app.bsky.feed.post/"))
       throw new Error("Post source attribution mismatch");
-    return send(200,{...result,verifiedAccountSession:true,publicScore:null,publicBadgeEnabled:false});
+    return send(200,{source:"bluesky_public_appview",did:connected.did,posts:result.posts,complete:false,warning:"This feed is incomplete and scores are private heuristic estimates.",hasMore:Boolean(result.hasMore),verifiedAccountSession:true,publicScore:null,publicBadgeEnabled:false});
    }catch(_error){return send(502,{error:"Could not retrieve account posts"})}
   }
   if(req.method==="POST"&&url.pathname==="/disconnect"){
