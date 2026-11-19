@@ -3,9 +3,12 @@
  * OAuth protocol (PKCE, PAR, DPoP) delegated to @atproto/oauth-client-node.
  */
 const http=require("node:http");
+const fs=require("node:fs");
+const pathModule=require("node:path");
 const {randomBytes,timingSafeEqual}=require("node:crypto");
 const {cleanHandle,isDid}=require("../extension/bluesky.js");
-const MAX_PENDING=100,TTL=10*60*1000;
+const MAX_PENDING=100,TTL=10*60*1000,SESSION_TTL=60*60*1000;
+const STATIC={"/":"account.html","/account-ui.js":"account-ui.js","/account.css":"account.css"};
 const token=()=>randomBytes(32).toString("base64url");
 function equal(a,b){if(typeof a!=="string"||typeof b!=="string")return false;const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&x.length>0&&timingSafeEqual(x,y);}
 function cookies(req){return Object.fromEntries(String(req.headers.cookie||"").split(";").map(x=>x.trim().split("=")).filter(x=>x.length===2));}
@@ -17,11 +20,21 @@ function createAccountServer({oauth,clock=Date.now}){
   res.setHeader("Cache-Control","no-store");
   res.setHeader("X-Content-Type-Options","nosniff");
   res.setHeader("Referrer-Policy","no-referrer");
-  res.setHeader("Content-Security-Policy","default-src 'none'; form-action 'self'; base-uri 'none'");
+  res.setHeader("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'");
   const send=(code,message)=>{res.writeHead(code,{"Content-Type":"application/json; charset=utf-8"});res.end(JSON.stringify(message));};
   let url;
   try{url=path(req.url)}catch{return send(400,{error:"Invalid request"})}
+  // Explicit host check blocks browser DNS-rebinding tricks against loopback.
+  const expectedHost="127.0.0.1:"+server.address()?.port;
+  if(req.headers.host!==expectedHost)return send(403,{error:"Host not permitted"});
+  if(req.method==="GET"&&Object.hasOwn(STATIC,url.pathname)){
+   const file=STATIC[url.pathname];
+   const type=file.endsWith(".js")?"text/javascript; charset=utf-8":file.endsWith(".css")?"text/css; charset=utf-8":"text/html; charset=utf-8";
+   res.writeHead(200,{"Content-Type":type});
+   return res.end(fs.readFileSync(pathModule.join(__dirname,file)));
+  }
   const c=cookies(req);
+  for(const [id,entry] of sessions)if(clock()-entry.linkedAt>=SESSION_TTL)sessions.delete(id);
   if(req.method==="GET"&&url.pathname==="/health")return send(200,{status:"ok",publicScores:false});
   if(req.method==="GET"&&url.pathname==="/oauth/start"){
    try{
@@ -66,7 +79,7 @@ function createAccountServer({oauth,clock=Date.now}){
    // Require no cross-origin browser requests and enforce Fetch Metadata when supplied.
    const origin=req.headers.origin;
    const site=req.headers["sec-fetch-site"];
-   if(origin&&origin!=="http://127.0.0.1:"+server.address()?.port)return send(403,{error:"Foreign origin"});
+   if(origin&&origin!=="http://"+expectedHost)return send(403,{error:"Foreign origin"});
    if(site&&site!=="same-origin"&&site!=="none")return send(403,{error:"Foreign request"});
    if(!connected)return send(401,{error:"Not connected"});
    // Double submit token is required, supplied by a same-origin account page later.

@@ -158,3 +158,7 @@ CSV export escapes formulas for safer opening in spreadsheet applications. The u
 A separate local AT Protocol OAuth service is included in `server/account-oauth.js`, using the official Node OAuth client for protocol-level PKCE, PAR and DPoP. It checks callback state against a short-lived browser session, exposes a private linked DID, supports local disconnect/revocation, and **never publishes an account score or turns on a badge**. It needs real externally hosted HTTPS client metadata and a consenting test account before a live login can work. See [setup and restrictions](docs/bluesky-oauth.md).
 
 This is not yet integrated with extension account settings or any production backend. Do not interpret the local OAuth prototype as a launch-ready identity system. Authentication is separate from the completeness, consent, contestability, and anti-manipulation requirements of public reputation scoring.
+
+## Local account connection console
+
+The OAuth development service also serves a simple browser page at `http://127.0.0.1:4318/`. Once properly configured with hosted AT Protocol client metadata, a developer can start a Bluesky login, see the authenticated DID and disconnect. The server now enforces a localhost Host-header check and one-hour session expiry. This page does **not** connect the extension to the account or enable score publication; see `docs/bluesky-oauth.md`.

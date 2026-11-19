@@ -72,3 +72,41 @@ test("connected session can disconnect only using same-origin CSRF header",async
   const after=await (await fetch(base+"/account",{headers:{Cookie:"mv_session="+session}})).json();assert.equal(after.linked,false);
  });
 });
+
+test("local account console is served with strict CSP and same-origin scripts",async()=>{
+ await setup(async({base})=>{
+  const page=await fetch(base+"/");
+  assert.equal(page.status,200);assert.match(page.headers.get("content-security-policy"),/script-src 'self'/);
+  const html=await page.text();assert.match(html,/Bluesky/);assert.match(html,/account-ui.js/);
+  const script=await fetch(base+"/account-ui.js");assert.equal(script.status,200);assert.match(script.headers.get("content-type"),/javascript/);
+  const css=await fetch(base+"/account.css");assert.equal(css.status,200);assert.match(css.headers.get("content-type"),/css/);
+ });
+});
+test("DNS rebinding Host header is blocked",async()=>{
+ const http=require("node:http");
+ await setup(async({base})=>{
+  const status=await new Promise((resolve,reject)=>{
+   const request=http.request(base+"/account",{headers:{Host:"attacker.example"}},response=>{
+    response.resume();response.on("end",()=>resolve(response.statusCode));
+   });
+   request.on("error",reject);request.end();
+  });
+  assert.equal(status,403);
+ });
+});
+test("local account session expires after one hour without becoming public",async()=>{
+ let now=1700000000000,state;
+ const oauth={authorize:async(_handle,{state:st})=>{state=st;return "https://auth.example.org/login"},callback:async()=>({session:{did},state})};
+ const {server}=createAccountServer({oauth,clock:()=>now});
+ await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
+ const base="http://127.0.0.1:"+server.address().port;
+ try{
+  const start=await fetch(base+"/oauth/start?handle=example.bsky.social",{redirect:"manual"});
+  const cb=await fetch(base+"/oauth/callback?code=x",{headers:{Cookie:"mv_oauth="+cookie(start)}});
+  const sid=(cb.headers.get("set-cookie")||"").match(/mv_session=([^;]+)/)?.[1];assert.ok(sid);
+  const auth=await (await fetch(base+"/account",{headers:{Cookie:"mv_session="+sid}})).json();assert.equal(auth.linked,true);
+  now+=3600001;
+  const expired=await (await fetch(base+"/account",{headers:{Cookie:"mv_session="+sid}})).json();assert.equal(expired.linked,false);
+  assert.equal(expired.publicScore,null);
+ }finally{await new Promise(resolve=>server.close(resolve))}
+});
