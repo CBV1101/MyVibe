@@ -174,3 +174,7 @@ The local OAuth account console now offers **Analyze my recent public posts** af
 ## Scoring calibration gate
 
 The heuristic now avoids penalizing clearly attributed, short quoted hostile remarks in a narrow set of reported-speech constructions, while still detecting direct insults outside those quotes. Run `npm run evaluate` to check the **70-example curated regression dataset** (neutral/negative/positive/advisory). CI fails on mislabeled outcomes, prioritizing no false positives on explicitly neutral speech. This is **not a measure of real-world scoring accuracy or fairness**; independent human annotation and more comprehensive evaluation remain mandatory before public scores. See [evaluation scope and release requirements](evaluation/README.md).
+
+## Browser-level smoke testing
+
+MyVibe now has a separate Playwright Chromium browser test job alongside the Node tests and curated scoring evaluation. It exercises real browser DOM behavior using mocked social composers and Chrome extension APIs: local scoring, opt-in AI calls, accepted rewrites, stale-result invalidation, and no raw message text in saved private samples. Run `npm install && npx playwright install chromium && npm run test:browser`. A passing browser smoke job does **not** replace manual live-platform and OAuth testing. Details and remaining beta gates: [Browser QA](docs/browser-qa.md).
