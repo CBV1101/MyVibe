@@ -3,14 +3,14 @@
 A privacy-first browser extension for constructive online conversations.
 
 ## Guiding principle
-**Criticism and disagreement never lower the score merely because they are critical or negative.** Criticize ideas, policies, behavior or arguments freely. MyVibe distinguishes respectful disagreement from **dismissive phrasing** and from **personal attacks**. Name-calling, insults about appearance, and identity-targeted hostility (race, sex, gender, sexuality, religion, disability, etc.) receive more severe penalties. Even when criticism is harsh, criticism itself is not a personal attack. Scoring may still be inaccurate, particularly with sarcasm and quotations.
+**Criticism and disagreement never lower the score merely because they are critical or negative.** Criticize ideas, policies, behavior or arguments freely. MyVibe is **neutral by default**, distinguishes constructive disagreement from dismissive phrasing, and focuses on **personal attacks**. Name-calling, insults about appearance, and identity-targeted hostility (race, sex, gender, sexuality, religion, disability, etc.) receive more severe penalties. Even when criticism is harsh, criticism itself is not a personal attack. Scoring may still be inaccurate, particularly with sarcasm and quotations.
 
-## Current prototype (v0.2)
+## Current prototype (v0.3)
 - Chrome/Edge Manifest V3 extension for X, Reddit, Threads and Bluesky.
 - Inline tone coach for textarea and contenteditable text boxes.
 - Local **rule-based** detection of a small set of insults, identity-directed hostility, dismissive phrasing and potentially passive-aggressive expressions; **AI is not connected yet**. Passive-aggressive detection is particularly context-dependent and advisory only.
 - Optional suggested rewrites for a few patterns, preserving author choice.
-- Draft score from 0–100, calculated as **75% respectfulness and 25% constructiveness**. These are provisional weights requiring user research and calibration; subtle phrasing receives small penalties, while personal abuse receives larger ones. **Scores are heuristic, not assessments of character.**
+- Draft score from 0–100, calculated as **75% respectfulness and 25% constructiveness**. These are provisional weights requiring user research and calibration; unambiguous dismissive phrasing can receive a small penalty, while personal abuse receives larger ones. Ambiguous phrases have no score penalty. **Scores are heuristic, not assessments of character.**
 - Explicitly opt-in to storing a sample via **Add to my vibe history**.
 - Private popup score is the average of saved samples; not yet a comprehensive or representative account score.
 - No post text sent to servers or stored. Only score, categories, hostname and timestamp saved locally.
@@ -41,5 +41,13 @@ This first build is a functional prototype, not a production-ready AI moderation
 - Never claim to know a writer's intention. Say **'Other readers might interpret this as…'** and show uncertainty.
 - A disagreement such as 'I think that is wrong because…' should remain score-neutral.
 - 'That argument is ridiculous' is not a personal attack but may receive a **small constructiveness deduction** for dismissiveness.
-- Passive-aggressive cues like 'If you say so' and 'Must be nice' can be sincere or sarcastic; only gentle, low-confidence suggestions are appropriate.
+- 'If you say so' is neutral: it can signal concession, not necessarily dismissal, so it has no detection or penalty. Ambiguous phrases such as 'Must be nice', 'Good for you', and 'No offense, but' may receive **optional interpretation notes** but **never a numerical deduction by themselves**.
 - We need an opt-out and real context-sensitive AI review before making any of these evaluations public or using them as definitive judgments about people.
+
+## Neutral speech and belief protections
+
+- No positivity requirement or reward for forced cheerfulness. Ordinary messages remain neutral by default.
+- Religious belief, worship, discussing and criticizing religious doctrines, explaining why one believes or disbelieves, and inviting others to consider a religion are **not negative**.
+- Constructive opposition to any religion, ideology, policy, institution or idea is allowed. Criticism becomes a concern when it attacks or demeans *people* because of their identity.
+- Potential passive aggression is often context dependent. Advisory notes communicate alternative interpretations, not intent or guilt, and weak evidence never lowers a score.
+- The mission is fewer hostile personal attacks and more meaningful discussion, not encouraging agreement or enforcing pleasantness.
