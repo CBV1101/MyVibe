@@ -5,14 +5,14 @@ A privacy-first browser extension for constructive online conversations.
 ## Guiding principle
 **Criticism and disagreement never lower the score merely because they are critical or negative.** Criticize ideas, policies, behavior or arguments freely. MyVibe is **neutral by default**, distinguishes constructive disagreement from dismissive phrasing, and focuses on **personal attacks**. Name-calling, insults about appearance, and identity-targeted hostility (race, sex, gender, sexuality, religion, disability, etc.) receive more severe penalties. Even when criticism is harsh, criticism itself is not a personal attack. Scoring may still be inaccurate, particularly with sarcasm and quotations.
 
-## Current prototype (v0.3)
+## Current prototype (v0.4)
 - Chrome/Edge Manifest V3 extension for X, Reddit, Threads and Bluesky.
 - Inline tone coach for textarea and contenteditable text boxes.
 - Local **rule-based** detection of a small set of insults, identity-directed hostility, dismissive phrasing and potentially passive-aggressive expressions; **AI is not connected yet**. Passive-aggressive detection is particularly context-dependent and advisory only.
 - Optional suggested rewrites for a few patterns, preserving author choice.
-- Draft score from 0–100, calculated as **75% respectfulness and 25% constructiveness**. These are provisional weights requiring user research and calibration; unambiguous dismissive phrasing can receive a small penalty, while personal abuse receives larger ones. Ambiguous phrases have no score penalty. **Scores are heuristic, not assessments of character.**
+- Draft score from 0–100 with a **neutral baseline of 50**. Meaningful encouragement, congratulations, gratitude, empathy, kindness and specific compliments increase the score; personal attacks reduce it. Unambiguous dismissive phrasing can carry a small penalty, and ambiguous phrases have no numerical penalty. All weights remain provisional. **Scores are heuristic, not assessments of character.**
 - Explicitly opt-in to storing a sample via **Add to my vibe history**.
-- Private popup score is the average of saved samples; not yet a comprehensive or representative account score.
+- Private popup score starts at 50, then becomes the average of opt-in samples using the v0.4 scale. Historical scores from earlier scales are excluded from the average. It is not yet a comprehensive or representative account score.
 - No post text sent to servers or stored. Only score, categories, hostname and timestamp saved locally.
 - Public sharing unavailable until proper accounts, consent and protections are built.
 
@@ -51,3 +51,18 @@ This first build is a functional prototype, not a production-ready AI moderation
 - Constructive opposition to any religion, ideology, policy, institution or idea is allowed. Criticism becomes a concern when it attacks or demeans *people* because of their identity.
 - Potential passive aggression is often context dependent. Advisory notes communicate alternative interpretations, not intent or guilt, and weak evidence never lowers a score.
 - The mission is fewer hostile personal attacks and more meaningful discussion, not encouraging agreement or enforcing pleasantness.
+
+## Balanced scoring philosophy (v0.4)
+
+- The product's purpose is **less hostility and more constructive interaction**, not compulsory positivity.
+- A neutral, respectful post is **50**. Ordinary criticism, religious discussion, and legitimate disagreement are not penalized.
+- Explicit encouragement, congratulations, thanks, empathy, kindness or sincere compliments can raise the score above 50.
+- Emoji can provide minor corroborating evidence only when there are meaningful positive words; emoji alone never earns positive credit.
+- Personal attacks, identity-directed hate and insults decrease the score; positive words cannot cancel out an explicit attack.
+- Scores are experimental, context-insensitive message heuristics; they do **not** demonstrate someone's character or intention.
+- Longer-term good-standing bonuses should only be considered after reliable verified-post attribution, daily caps and anti-spam measures exist. Neutral messages should not be gamed through repeated manual draft saving.
+- A user's historical score should eventually include confidence/sample size and an understandable time window, with enough smoothing to avoid single-post swings. Public scores remain disabled pending consent and bias review.
+
+### Example inspiration
+
+The tone target includes encouragement, celebrating others and promoting growth, as seen in some publicly accessible posts by @tyromper. We have not analyzed that account's full timeline and have not assigned it a real score. Criticism and religion remain protected neutral topics; individual attacks still count against the score, regardless of overall positive messaging.

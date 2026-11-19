@@ -17,8 +17,8 @@
   const text=textOf(active).trim();
   if(!text){panel.style.display="none";return;}
   const result=MyVibeTone.analyze(text);
-  panel.querySelector("[data-status]").textContent="Draft vibe: "+result.score+"/100 · Respectfulness "+result.respectfulness+" · Constructiveness "+result.constructiveness;
-  panel.querySelector("[data-flags]").textContent=result.flags.length?result.flags.map(f=>"• "+f.label+" ("+f.confidence+" confidence)\n  "+f.interpretation+"\n  Consider: "+f.tip).join("\n\n"):"No issues detected. Strong disagreement and substantive criticism are welcome.";
+  panel.querySelector("[data-status]").textContent="Draft vibe: "+result.score+"/100 · "+(result.score>50?"Positive":result.score===50?"Neutral":"Consider revising");
+  panel.querySelector("[data-flags]").textContent=(result.positives.length?"✓ Positive signals: "+result.positives.map(p=>p.label).join(", ")+"\n\n":"")+(result.flags.length?result.flags.map(f=>"• "+f.label+" ("+f.confidence+" confidence)\n  "+f.interpretation+"\n  Consider: "+f.tip).join("\n\n"):"No attacks detected. Disagreement and normal discussion are neutral.");
   panel.querySelector("[data-rewrite]").style.display=result.changed?"block":"none";
   const rect=active.getBoundingClientRect();
   panel.style.left=Math.max(8,Math.min(window.innerWidth-350,rect.left))+"px";
@@ -50,7 +50,7 @@
   const result=MyVibeTone.analyze(textOf(active));
   if(result.score===null)return;
   chrome.storage.local.get({myvibeHistory:[]},({myvibeHistory})=>{
-   const entry={score:result.score,respectfulness:result.respectfulness,constructiveness:result.constructiveness,at:Date.now(),platform:location.hostname,flags:result.flags.map(f=>f.id)};
+   const entry={schemaVersion:2,score:result.score,respectfulness:result.respectfulness,constructiveness:result.constructiveness,at:Date.now(),platform:location.hostname,flags:result.flags.map(f=>f.id),positiveSignals:result.positives.map(p=>p.id)};
    chrome.storage.local.set({myvibeHistory:[...myvibeHistory,entry].slice(-500)});
    panel.querySelector("[data-record]").textContent="Added ✓";
    setTimeout(()=>panel.querySelector("[data-record]").textContent="Add to my vibe history",1200);

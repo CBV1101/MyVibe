@@ -1,4 +1,4 @@
-/* MyVibe v0.3: neutral by default; conservative tone heuristics, not AI. */
+/* MyVibe v0.4: neutral baseline with positive and negative signals. Local heuristic prototype, not AI. */
 (function(root){
  "use strict";
  const patterns=[
@@ -13,6 +13,14 @@
   {id:"passive-no-offense",kind:"constructiveness",weight:0,label:"Potentially defensive framing",confidence:"low",regex:/\bno offense,?\s+but\b/i,interpretation:"Readers may expect an insult after 'no offense, but'.",tip:"State your concern directly and respectfully."},
   {id:"passive-sorry-you-feel",kind:"constructiveness",weight:0,label:"Possibly invalidating reply",confidence:"low",regex:/\b(?:i'm|i am)\s+sorry\s+you\s+feel\s+that\s+way\b/i,interpretation:"Some readers may feel their concern is being brushed aside.",tip:"Acknowledge the concern and explain your perspective."}
  ];
+ const positivePatterns=[
+  {id:"encouragement",weight:18,label:"Encouragement",regex:/\b(?:you(?:'ve| have) got this|keep going|don't give up|you can do it|believe in yourself|i believe in you|you are capable|you got this)\b/i},
+  {id:"congratulations",weight:20,label:"Celebrating others",regex:/\b(?:congratulations|congrats|so proud of you|proud of you|well done|great job|you deserve this)\b/i},
+  {id:"gratitude",weight:12,label:"Gratitude",regex:/\b(?:thank you|thanks for (?:helping|sharing|being|your)|i appreciate you|grateful for you)\b/i},
+  {id:"empathy",weight:16,label:"Empathy or support",regex:/\b(?:i'm here for you|i am here for you|sorry you're going through this|that sounds really hard|sending you support|i'm rooting for you|i am rooting for you)\b/i},
+  {id:"kindness",weight:13,label:"Encouraging kindness",regex:/\b(?:be kind to others|lift each other up|celebrate others|encourage others|help others grow|build each other up|be generous with others)\b/i},
+  {id:"compliment",weight:14,label:"Specific compliment",regex:/\b(?:you did (?:a )?(?:great|excellent|wonderful|fantastic) job|your work is (?:great|excellent|fantastic)|i admire your|i love how you)\b/i}
+ ];
  const replacements=[
   [/\bshut up\b/gi,"I'd like to focus on the issue"],
   [/\bnobody cares about you\b/gi,"I don't think that addresses the issue"],
@@ -21,20 +29,29 @@
  ];
  function analyze(value){
   const text=String(value||"").trim();
-  if(!text)return {score:null,respectfulness:null,constructiveness:null,level:"empty",flags:[],suggestion:"",changed:false};
+  if(!text)return {score:null,respectfulness:null,constructiveness:null,level:"empty",flags:[],positives:[],suggestion:"",changed:false};
   // Ambiguous phrases trigger at most advisory feedback; they do not lower scores.
   // Heuristics are advisory: quoted speech and context require real semantic evaluation.
   const flags=patterns.filter(p=>p.regex.test(text)).map(({id,kind,weight,label,confidence,interpretation,tip})=>({id,kind,weight,label,confidence,interpretation,tip}));
-  const respectfulness=Math.max(0,100-flags.filter(f=>f.kind==="respect").reduce((s,f)=>s+f.weight,0));
-  const constructiveness=Math.max(0,100-flags.filter(f=>f.kind==="constructiveness").reduce((s,f)=>s+f.weight,0));
-  // Only actionable negativity reduces scores. Low-confidence ambiguous phrasing has zero weight.
-  const score=Math.round(respectfulness*0.75+constructiveness*0.25);
+  // Neutral is the default (50). Heuristics represent message tone, not the person's worth.
+  const positives=positivePatterns.filter(p=>p.regex.test(text)).map(({id,weight,label})=>({id,weight,label}));
+  const respectPenalty=flags.filter(f=>f.kind==="respect").reduce((sum,f)=>sum+f.weight,0);
+  const constructPenalty=flags.filter(f=>f.kind==="constructiveness").reduce((sum,f)=>sum+f.weight*0.4,0);
+  // Emojis only add minor supportive evidence when an actual positive signal exists.
+  const positiveStrength=positives.reduce((sum,p)=>sum+p.weight,0);
+  const emojiBonus=positiveStrength&&/[❤️💚💙💜💛🙌👏🎉😊]/u.test(text)?2:0;
+  const positiveBonus=Math.min(40,positiveStrength+emojiBonus);
+  let score=Math.round(Math.max(0,Math.min(100,50+positiveBonus-respectPenalty-constructPenalty)));
+  // A message containing an explicit personal attack cannot gain a positive rating through flattery.
+  if(respectPenalty>0)score=Math.min(score,49);
+  const respectfulness=Math.round(Math.max(0,Math.min(100,50-respectPenalty)));
+  const constructiveness=Math.round(Math.max(0,Math.min(100,50+positiveBonus-constructPenalty)));
   let suggestion=text;
   for(const [re,replace] of replacements)suggestion=suggestion.replace(re,replace);
   // Don't generate generic or meaning-changing rewrites for nuanced/identity-directed cases.
   if(flags.some(f=>f.id==="identity-hate"||f.id==="appearance-attack"))suggestion="";
-  return {score,respectfulness,constructiveness,level:score===100?"neutral":score>=65?"review":"hurtful",
-   flags,suggestion,changed:!!suggestion&&suggestion!==text};
+  return {score,respectfulness,constructiveness,level:score>=65?"positive":score>=50?"neutral":score>=30?"review":"hurtful",
+   flags,positives,suggestion,changed:!!suggestion&&suggestion!==text};
  }
  root.MyVibeTone={analyze};
  if(typeof module!=="undefined"&&module.exports)module.exports={analyze};
