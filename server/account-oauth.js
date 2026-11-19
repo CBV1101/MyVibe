@@ -48,11 +48,11 @@ function createAccountServer({oauth,clock=Date.now}){
     const {session,state}=await oauth.callback(url.searchParams);
     if(!equal(p.state,state)||!isDid(session?.did)){
      // SDK may have created a session; revoke it if possible, never associate with browser.
-     if(session?.signOut)await session.signOut().catch(()=>{});
+     if(typeof session?.signOut==="function")try{await session.signOut()}catch{}
      return send(403,{error:"Account link verification failed"});
     }
     const sid=token();
-    sessions.set(sid,{did:session.did,linkedAt:clock()});
+    sessions.set(sid,{did:session.did,linkedAt:clock(),csrf:token()});
     res.setHeader("Set-Cookie",["mv_session="+sid+"; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600","mv_oauth=; HttpOnly; SameSite=Lax; Path=/oauth; Max-Age=0"]);
     return send(200,{linked:true,did:session.did,notice:"Local development connection only. Public badge disabled."});
    }catch(_err){return send(400,{error:"OAuth callback could not be verified"})}
@@ -60,7 +60,7 @@ function createAccountServer({oauth,clock=Date.now}){
   const sid=c.mv_session,connected=sid&&sessions.get(sid);
   if(req.method==="GET"&&url.pathname==="/account"){
    if(!connected)return send(200,{linked:false,publicScore:null,publicBadgeEnabled:false});
-   return send(200,{linked:true,did:connected.did,linkedAt:connected.linkedAt,publicScore:null,publicBadgeEnabled:false});
+   return send(200,{linked:true,did:connected.did,linkedAt:connected.linkedAt,publicScore:null,publicBadgeEnabled:false,csrf:connected.csrf});
   }
   if(req.method==="POST"&&url.pathname==="/disconnect"){
    // Require no cross-origin browser requests and enforce Fetch Metadata when supplied.
@@ -70,7 +70,7 @@ function createAccountServer({oauth,clock=Date.now}){
    if(site&&site!=="same-origin"&&site!=="none")return send(403,{error:"Foreign request"});
    if(!connected)return send(401,{error:"Not connected"});
    // Double submit token is required, supplied by a same-origin account page later.
-   if(!equal(req.headers["x-myvibe-csrf"],sid))return send(403,{error:"CSRF validation required"});
+   if(!equal(req.headers["x-myvibe-csrf"],connected.csrf))return send(403,{error:"CSRF validation required"});
    sessions.delete(sid);
    try{await oauth.revoke?.(connected.did)}catch(_err){/* local session still revoked */ }
    res.setHeader("Set-Cookie","mv_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0");
