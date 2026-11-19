@@ -70,17 +70,7 @@
    const summary=report?MyVibeOwnerReview.summarize(report):null;
    $("review-breakdown").textContent=summary?summary.positive+" positive · "+summary.negative+" negative · "+summary.neutral+" neutral post signals.":"No posts to classify.";
    renderTimeline();
-   /*
-   for(const entry of (report?.timeline||[]).slice(-50).reverse()){
-    const article=document.createElement("article");article.className="review-entry";
-    const paragraph=document.createElement("p");paragraph.textContent=entry.text;
-    const metrics=document.createElement("small");metrics.textContent="Post "+entry.score+"/100 · Effect "+(entry.delta>0?"+":"")+entry.delta.toFixed(2)+" · "+(entry.reasons.map(r=>r.label).join(", ")||"Neutral");
-    const linkUrl=MyVibeTrace.postLink(entry.uri);
-    article.append(paragraph,metrics);
-    if(linkUrl){const a=document.createElement("a");a.href=linkUrl;a.target="_blank";a.rel="noopener noreferrer";a.textContent="View source post";article.append(a);}
-    $("review-entries").append(article);
-   }
-   */
+
    $("review-status").textContent="Private local review completed. Nothing was published or saved.";
   }catch(error){if(serial===reviewSerial)$("review-status").textContent=error.message;}
   finally{button.disabled=false;}
