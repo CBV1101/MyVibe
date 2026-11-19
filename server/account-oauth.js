@@ -7,6 +7,7 @@ const fs=require("node:fs");
 const pathModule=require("node:path");
 const {randomBytes,timingSafeEqual}=require("node:crypto");
 const {cleanHandle,isDid}=require("../extension/bluesky.js");
+const {getOwnedPosts}=require("./owned-posts.js");
 const MAX_PENDING=100,TTL=10*60*1000,SESSION_TTL=60*60*1000;
 const LOCAL_REDIRECT_URI="http://127.0.0.1:4318/oauth/callback";
 const LOCAL_CLIENT_ID="http://localhost?redirect_uri="+encodeURIComponent(LOCAL_REDIRECT_URI)+"&scope=atproto";
@@ -18,12 +19,12 @@ function resolveClientId(value){
   throw new Error("MYVIBE_ATPROTO_CLIENT_ID must be a public HTTPS metadata URL or 'localhost'");
  return parsed.toString();
 }
-const STATIC={"/":"account.html","/account-ui.js":"account-ui.js","/account.css":"account.css"};
+const STATIC={"/":"account.html","/account-ui.js":"account-ui.js","/account.css":"account.css","/tone.js":"../extension/tone.js","/history.js":"../extension/history.js","/archive.js":"../extension/archive.js","/trace.js":"../extension/trace.js"};
 const token=()=>randomBytes(32).toString("base64url");
 function equal(a,b){if(typeof a!=="string"||typeof b!=="string")return false;const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&x.length>0&&timingSafeEqual(x,y);}
 function cookies(req){return Object.fromEntries(String(req.headers.cookie||"").split(";").map(x=>x.trim().split("=")).filter(x=>x.length===2));}
 function path(url){return new URL(url,"http://127.0.0.1");}
-function createAccountServer({oauth,clock=Date.now}){
+function createAccountServer({oauth,clock=Date.now,fetchPosts=getOwnedPosts}){
  if(!oauth||typeof oauth.authorize!=="function"||typeof oauth.callback!=="function")throw new TypeError("OAuth client required");
  const pending=new Map(),sessions=new Map();
  const server=http.createServer(async(req,res)=>{
@@ -84,6 +85,26 @@ function createAccountServer({oauth,clock=Date.now}){
   if(req.method==="GET"&&url.pathname==="/account"){
    if(!connected)return send(200,{linked:false,publicScore:null,publicBadgeEnabled:false});
    return send(200,{linked:true,did:connected.did,linkedAt:connected.linkedAt,publicScore:null,publicBadgeEnabled:false,csrf:connected.csrf});
+  }
+  if(req.method==="GET"&&url.pathname==="/account/posts"){
+   if(!connected)return send(401,{error:"Authentication required"});
+   // A website must not be able to query the owner's session via localhost.
+   const site=req.headers["sec-fetch-site"],origin=req.headers.origin;
+   if(site&&site!=="same-origin"&&site!=="none")return send(403,{error:"Cross-site request denied"});
+   if(origin&&origin!=="http://"+expectedHost)return send(403,{error:"Foreign origin"});
+   // Do not accept actor, handle or DID query parameters from the caller.
+   if([...url.searchParams].length)return send(400,{error:"Account selection is not supported"});
+   const now=clock();
+   if(Number.isFinite(connected.lastPostRead)&&now-connected.lastPostRead<15000)return send(429,{error:"Retry after 15 seconds"});
+   connected.lastPostRead=now;
+   try{
+    const result=await fetchPosts(connected.did);
+    // Revalidate even when the data supplier is swapped during tests or upgrades.
+    if(result?.did!==connected.did||!Array.isArray(result?.posts)||
+       result.posts.length>300||result.posts.some(p=>p.authorDid!==connected.did))
+      throw new Error("Post source attribution mismatch");
+    return send(200,{...result,verifiedAccountSession:true,publicScore:null,publicBadgeEnabled:false});
+   }catch(_error){return send(502,{error:"Could not retrieve account posts"})}
   }
   if(req.method==="POST"&&url.pathname==="/disconnect"){
    // Require no cross-origin browser requests and enforce Fetch Metadata when supplied.
