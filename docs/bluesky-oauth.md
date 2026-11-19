@@ -45,3 +45,17 @@ The development OAuth service now serves a browser interface at `http://127.0.0.
 The account page uses same-origin JavaScript/CSS, a restrictive Content Security Policy, and a Host-header restriction to `127.0.0.1` and the running port to reduce DNS-rebinding risk. Local account sessions are removed from memory after one hour. The account endpoint reports **no public score** regardless of login state. This is a development console, not consumer login and not an extension OAuth connection.
 
 A real Bluesky login needs either an authorization server that accepts the protocol's optional localhost client-ID exception or a valid hosted HTTPS OAuth client metadata document. The end-to-end SDK/provider flow and browser behavior require manual validation before release.
+
+## Private, owner-bound post review
+
+Once authenticated in the **local account console**, select **Analyze my recent public posts**. This makes a same-origin browser request to `GET /account/posts`. The server uses **only the DID from the verified in-memory OAuth session** and requests a bounded sample from the fixed public Bluesky AppView endpoint. There is no caller-supplied DID/handle override.
+
+The result is rechecked for DID consistency. The account console uses the existing local, heuristic scoring engine in the browser to produce a **private, temporary practice score** and per-post explanations, with links back to original public posts. This is not a complete account history or verified public reputation: scoring still lacks context and the feed may be incomplete.
+
+- The endpoint requires a current OAuth session, disallows account-selection query parameters, rejects cross-origin/cross-site reads and limits repeat requests to once every 15 seconds per session.
+- Results are not saved by the local account server or persisted by the console. Closing or reloading the console clears the in-page analysis. The **Clear analysis** button erases the in-page report immediately.
+- If disconnected or expired, the server rejects requests and the console removes the report when session state is refreshed.
+- The server never returns a publishable score; `publicScore` remains `null` and `publicBadgeEnabled` stays `false`.
+- This builds a real ownership-bound *review* path only. It is not a shared cloud user identity, durable posting proof, or entitlement control. Manual live OAuth provider and browser QA remain outstanding.
+
+The fetcher and account API have mocked regression tests for DID binding, unrelated posts, replayed requests and cross-site attempts.
