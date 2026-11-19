@@ -37,14 +37,22 @@
   [/\byou(?:'re| are)\s+(?:an?\s+)?(?:idiot|moron|loser|dumbass|imbecile|stupid)\b/gi,"I disagree with your reasoning"],
   [/\b(?:that|your|this)\s+(?:argument|point|opinion|take)\s+(?:is|was|sounds)\s+(?:just\s+)?(?:ridiculous|laughable|absurd)\b/gi,"I disagree with that argument because…"],
  ];
+ function stripReportedQuotes(text){
+  // Small, intentionally narrow heuristic: a clearly attributed quotation is not
+  // automatically the writer's own insult. Only exact quoted spans following a
+  // reporting verb are excluded. Everything outside the quote is still assessed.
+  return text.replace(/\b(?:he|she|they|someone|a user|the commenter|the post|my friend)\s+(?:said|wrote|posted|quoted)\s*[:,]?\s*(["“'])(.{1,500}?)["”']/gi,
+   match=>match.replace(/["“'][^"”']{1,500}["”']/, " [quoted speech] "));
+ }
  function analyze(value){
   const text=String(value||"").trim();
   if(!text)return {score:null,respectfulness:null,constructiveness:null,level:"empty",flags:[],positives:[],suggestion:"",changed:false};
   // Ambiguous phrases trigger at most advisory feedback; they do not lower scores.
   // Heuristics are advisory: quoted speech and context require real semantic evaluation.
-  const flags=[...targetedPatterns,...patterns,...contextualPatterns].filter(p=>p.regex.test(text)).map(({id,kind,weight,label,confidence,interpretation,tip})=>({id,kind,weight,label,confidence,interpretation,tip}));
+  const ownSpeech=stripReportedQuotes(text);
+  const flags=[...targetedPatterns,...patterns,...contextualPatterns].filter(p=>p.regex.test(ownSpeech)).map(({id,kind,weight,label,confidence,interpretation,tip})=>({id,kind,weight,label,confidence,interpretation,tip}));
   // Neutral is the default (50). Heuristics represent message tone, not the person's worth.
-  const positives=positivePatterns.filter(p=>p.regex.test(text)).map(({id,weight,label})=>({id,weight,label}));
+  const positives=positivePatterns.filter(p=>p.regex.test(ownSpeech)).map(({id,weight,label})=>({id,weight,label}));
   // Use the most severe single personal-attack category to avoid double-counting overlapping phrases.
   const respectPenalty=Math.max(0,...flags.filter(f=>f.kind==="respect").map(f=>f.weight));
   const constructPenalty=Math.min(20,flags.filter(f=>f.kind==="constructiveness").reduce((sum,f)=>sum+f.weight*0.4,0));
@@ -61,9 +69,11 @@
   for(const [re,replace] of replacements)suggestion=suggestion.replace(re,replace);
   // Don't generate generic or meaning-changing rewrites for nuanced/identity-directed cases.
   if(flags.some(f=>f.id==="identity-hate"||f.id==="appearance-attack"))suggestion="";
+  // Never propose edits to quoted material when assessing a reported incident.
+  if(ownSpeech!==text)suggestion="";
   return {score,respectfulness,constructiveness,level:score>=65?"positive":score>=50?"neutral":score>=30?"review":"hurtful",
    flags,positives,suggestion,changed:!!suggestion&&suggestion!==text};
  }
- root.MyVibeTone={analyze};
- if(typeof module!=="undefined"&&module.exports)module.exports={analyze};
+ root.MyVibeTone={analyze,stripReportedQuotes};
+ if(typeof module!=="undefined"&&module.exports)module.exports={analyze,stripReportedQuotes};
 })(typeof globalThis!=="undefined"?globalThis:this);
