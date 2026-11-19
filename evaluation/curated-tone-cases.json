@@ -1,0 +1,426 @@
+{
+  "version": "human-authored-calibration-v1",
+  "description": "Curated regression cases, not a representative dataset or scientific bias assessment.",
+  "cases": [
+    {
+      "id": "neutral-01",
+      "text": "I strongly disagree with your argument.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-02",
+      "text": "This proposal is terrible and badly designed.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-03",
+      "text": "Your policy is harmful, and I oppose it.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-04",
+      "text": "I think your position is wrong because the evidence is weak.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-05",
+      "text": "I don't believe in God and disagree with Christianity.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-06",
+      "text": "I think Islam has theological problems.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-07",
+      "text": "I believe in Jesus Christ.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-08",
+      "text": "I'm an atheist and here is why.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-09",
+      "text": "I am Jewish and proud of my beliefs.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-10",
+      "text": "People should be allowed to criticize any religion.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-11",
+      "text": "I oppose the government's immigration policy.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-12",
+      "text": "I support higher taxes.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-13",
+      "text": "I oppose higher taxes.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-14",
+      "text": "That is a bad design decision.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-15",
+      "text": "If you say so.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-16",
+      "text": "Good for you.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-17",
+      "text": "Must be nice.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-18",
+      "text": "No offense, but I disagree.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-19",
+      "text": "I disagree with same-sex marriage.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-20",
+      "text": "I support same-sex marriage.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-21",
+      "text": "I think that article is misleading.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-22",
+      "text": "She said \"you are an idiot\" and I told her it was unacceptable.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-23",
+      "text": "The commenter wrote \"I hate Jewish people\" and I reported it.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-24",
+      "text": "He said \"shut up\" but I refused.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-25",
+      "text": "They posted \"you are dumb\" and I asked them to be civil.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-26",
+      "text": "The post quoted \"all muslims are inferior\" as an example of hate speech.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-27",
+      "text": "I disagree with your religion, not with you as a person.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-28",
+      "text": "I'm not convinced by your claim.",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-29",
+      "text": "❤️❤️❤️",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "neutral-30",
+      "text": "I don't like 🍔",
+      "expected": "neutral",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-01",
+      "text": "You are an idiot.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-02",
+      "text": "You're a moron.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-03",
+      "text": "You're a fucking idiot.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-04",
+      "text": "You are dumb.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-05",
+      "text": "Shut up.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-06",
+      "text": "Nobody cares about you.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-07",
+      "text": "You're ugly.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-08",
+      "text": "I hate Jewish people.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-09",
+      "text": "I hate Muslims.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-10",
+      "text": "All muslims are inferior.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-11",
+      "text": "All women are worthless.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-12",
+      "text": "Your post is dumb.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-13",
+      "text": "Your religion is dumb.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-14",
+      "text": "That argument is ridiculous.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-15",
+      "text": "Your opinion is laughable.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-16",
+      "text": "You are an imbecile.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-17",
+      "text": "I hate you.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-18",
+      "text": "Congratulations, you are an idiot.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-19",
+      "text": "You are a dumbass.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "negative-20",
+      "text": "You are so dumb.",
+      "expected": "negative",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-01",
+      "text": "Congratulations!",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-02",
+      "text": "Congratulations! You deserve this!",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-03",
+      "text": "Well done!",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-04",
+      "text": "Keep going!",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-05",
+      "text": "You got this!",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-06",
+      "text": "I believe in you.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-07",
+      "text": "Don't give up!",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-08",
+      "text": "Thank you for helping.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-09",
+      "text": "I'm here for you.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-10",
+      "text": "That sounds really hard.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-11",
+      "text": "I appreciate you.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-12",
+      "text": "Your work is excellent.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-13",
+      "text": "I admire your courage.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-14",
+      "text": "I'm rooting for you.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "positive-15",
+      "text": "Be kind to others.",
+      "expected": "positive",
+      "notes": "Curated example; not empirical model validation"
+    },
+    {
+      "id": "advisory-01",
+      "text": "Must be nice.",
+      "expected": "advisory",
+      "notes": "Ambiguity should not lower numerical scores"
+    },
+    {
+      "id": "advisory-02",
+      "text": "Good for you.",
+      "expected": "advisory",
+      "notes": "Ambiguity should not lower numerical scores"
+    },
+    {
+      "id": "advisory-03",
+      "text": "No offense, but I disagree.",
+      "expected": "advisory",
+      "notes": "Ambiguity should not lower numerical scores"
+    },
+    {
+      "id": "advisory-04",
+      "text": "I don't like ✡️",
+      "expected": "advisory",
+      "notes": "Ambiguity should not lower numerical scores"
+    },
+    {
+      "id": "advisory-05",
+      "text": "I don't like 👨‍❤️‍👨",
+      "expected": "advisory",
+      "notes": "Ambiguity should not lower numerical scores"
+    }
+  ]
+}
