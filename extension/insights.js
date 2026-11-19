@@ -1,7 +1,7 @@
 (() => {
  "use strict";
  const $=id=>document.getElementById(id);
- let report=null;
+ let report=null,requestId=0;
  const sample=[
   {text:"I disagree with that decision because the evidence suggests another approach.",date:"2026-09-01"},
   {text:"Congratulations! You deserve this!",date:"2026-09-04"},
@@ -36,12 +36,32 @@
   }
  }
  function load(records){report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);setError(null);render();}
+ $("bluesky-fetch").addEventListener("click",async()=>{
+  const id=++requestId,button=$("bluesky-fetch");
+  const handle=$("bluesky-handle").value;
+  button.disabled=true;
+  $("bluesky-status").textContent="Fetching public posts. No account login or posting permission is requested.";
+  $("bluesky-source").hidden=true;
+  try{
+   const response=await MyVibeBluesky.fetchPublicPosts(handle);
+   if(id!==requestId)return;
+   if(!response.posts.length)throw new Error("No public text posts were found in the retrieved pages");
+   load(response.posts.map((item,index)=>({text:item.text,date:item.date,position:index,uri:item.uri})));
+   $("bluesky-source").hidden=false;
+   $("bluesky-source").textContent="Public AppView: @"+response.profile.handle+" · DID: "+response.profile.did+
+    "\\n"+response.posts.length+" public posts analyzed (up to "+response.requests+" feed pages)."+
+    "\\nRead-only public lookup, NOT account ownership verification. Feed may be incomplete and scores are private local estimates.";
+   $("bluesky-status").textContent="Public posts loaded. This score cannot be published or used as a verified account score.";
+  }catch(err){
+   if(id===requestId){setError(err);$("bluesky-status").textContent="Import failed. Your existing analysis, if any, remains unchanged.";}
+  }finally{if(id===requestId)button.disabled=false;}
+ });
  $("archive").addEventListener("change",async(e)=>{
   const file=e.target.files?.[0];if(!file)return;
   try{if(file.size>8*1024*1024)throw new Error("Maximum file size is 8 MB");load(MyVibeArchive.parseArchive(await file.text(),file.name));}
   catch(err){report=null;render();setError(err);}
  });
  $("example").addEventListener("click",()=>{load(sample.map((r,i)=>({...r,position:i})));});
- $("reset").addEventListener("click",()=>{report=null;$("archive").value="";setError(null);render();});
+ $("reset").addEventListener("click",()=>{requestId++;report=null;$("archive").value="";$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
  $("filter").addEventListener("change",render);
 })();
