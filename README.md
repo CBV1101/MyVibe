@@ -142,3 +142,13 @@ In **Archive Insights**, paste a public Bluesky handle (for example, `example.bs
 - For an actual public MyVibes badge we still need account-owner authentication, approved score publication, completeness rules, and permission revocation.
 
 The importer is tested using mocked API responses; tests never depend on the live Bluesky network.
+
+## Traceable Bluesky analysis exports and sharing safety (v0.7)
+
+The private **Archive Insights** dashboard now links each recognized Bluesky post to its original public URL using validated AT URIs, preserves the source ID in each scoring event, and can export the full local message-by-message analysis as JSON or CSV. Exported files include the **original imported text**, scoring reasons, timestamps, before/after changes and source disclaimers. No export is uploaded automatically.
+
+The data controls page lets a person record **interest in future public sharing** on this device. This is NOT a public toggle, does NOT authenticate the owner, and does NOT publish any score. It can be switched off and is erased with other local data. The extension intentionally refuses to calculate a publishable score from public feeds, self-selected drafts, or unsigned export files.
+
+A genuine Bluesky ownership connection must use AT Protocol OAuth through an authorized client with verified identity, distinct from this read-only public lookup. We must deploy client metadata and implement the authorization, callback, token/session security and consent/revocation flow before any public badge may be enabled. See the [official AT Protocol OAuth overview](https://atproto.com/guides/about-oauth).
+
+CSV export escapes formulas for safer opening in spreadsheet applications. The user remains responsible for sharing any downloaded files.

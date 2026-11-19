@@ -1,7 +1,7 @@
 (() => {
  "use strict";
  const $=id=>document.getElementById(id);
- let report=null,requestId=0;
+ let report=null,requestId=0,source=null;
  const sample=[
   {text:"I disagree with that decision because the evidence suggests another approach.",date:"2026-09-01"},
   {text:"Congratulations! You deserve this!",date:"2026-09-04"},
@@ -13,7 +13,7 @@
  const fmt=n=>n>0?"+"+n.toFixed(2):n.toFixed(2);
  function setError(error){$("error").hidden=!error;$("error").textContent=error?String(error.message||error):"";}
  function render(){
-  $("results").hidden=!report;if(!report)return;
+  $("results").hidden=!report;$("insights-export").hidden=!report;if(!report)return;
   $("score").textContent=report.score.toFixed(1);
   $("count").textContent=report.count;
   $("positive").textContent=report.positive;
@@ -32,10 +32,16 @@
    const text=document.createElement("p");text.className="message";text.textContent=e.text;
    const reasons=document.createElement("div");reasons.className="reasons";reasons.textContent=e.reasons.length?e.reasons.map(r=>r.label+" ("+r.confidence+")").join(" · "):"No positive or negative signals detected";
    const scoreline=document.createElement("div");scoreline.className="scoreline";scoreline.textContent="Message "+e.score+"/100 · Overall "+e.previous.toFixed(2)+" → "+e.after.toFixed(2);
-   node.append(head,text,reasons,scoreline);$("timeline").append(node);
+   node.append(head,text,reasons,scoreline);
+   const url=MyVibeTrace.postLink(e.uri);
+   if(url){const link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="View original Bluesky post";link.style.display="inline-block";link.style.marginTop="7px";node.append(link);}
+   $("timeline").append(node);
   }
  }
- function load(records){report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);setError(null);render();}
+ function load(records,provenance=null){report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;setError(null);render();}
+ function download(content,filename,mime){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}
+ $("export-json").addEventListener("click",()=>{if(!report)return;download(JSON.stringify(MyVibeTrace.exportDocument(report,source),null,2),"myvibes-analysis.json","application/json");$("export-status").textContent="Export created locally. It contains the analyzed message text.";});
+ $("export-csv").addEventListener("click",()=>{if(!report)return;download(MyVibeTrace.reportCsv(report),"myvibes-analysis.csv","text/csv");$("export-status").textContent="CSV created locally. It contains the analyzed message text.";});
  $("bluesky-fetch").addEventListener("click",async()=>{
   const id=++requestId,button=$("bluesky-fetch");
   const handle=$("bluesky-handle").value;
@@ -46,11 +52,11 @@
    const response=await MyVibeBluesky.fetchPublicPosts(handle);
    if(id!==requestId)return;
    if(!response.posts.length)throw new Error("No public text posts were found in the retrieved pages");
-   load(response.posts.map((item,index)=>({text:item.text,date:item.date,position:index,uri:item.uri})));
+   load(response.posts.map((item,index)=>({text:item.text,date:item.date,position:index,uri:item.uri,source:item.source})),{type:"bluesky_public_feed",did:response.profile.did,handle:response.profile.handle,hasMore:response.hasMore,count:response.posts.length});
    $("bluesky-source").hidden=false;
    $("bluesky-source").textContent="Public AppView: @"+response.profile.handle+" · DID: "+response.profile.did+
-    "\\n"+response.posts.length+" public posts analyzed (up to "+response.requests+" feed pages)."+
-    "\\nRead-only public lookup, NOT account ownership verification. Feed may be incomplete and scores are private local estimates.";
+    "\n"+response.posts.length+" public posts analyzed (up to "+response.requests+" feed pages)."+
+    "\nRead-only public lookup, NOT account ownership verification. Feed may be incomplete and scores are private local estimates.";
    $("bluesky-status").textContent="Public posts loaded. This score cannot be published or used as a verified account score.";
   }catch(err){
    if(id===requestId){setError(err);$("bluesky-status").textContent="Import failed. Your existing analysis, if any, remains unchanged.";}
@@ -62,6 +68,6 @@
   catch(err){report=null;render();setError(err);}
  });
  $("example").addEventListener("click",()=>{load(sample.map((r,i)=>({...r,position:i})));});
- $("reset").addEventListener("click",()=>{requestId++;report=null;$("archive").value="";$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
+ $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;$("export-status").textContent="";$("archive").value="";$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
  $("filter").addEventListener("change",render);
 })();

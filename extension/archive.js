@@ -68,7 +68,7 @@
    if(result.score>50)positive++;else if(result.score<50)negative++;else neutral++;
    for(const f of result.flags||[])if(f.weight>0)categories.set(f.id,(categories.get(f.id)||0)+1);
    for(const p of result.positives||[])categories.set(p.id,(categories.get(p.id)||0)+1);
-   return {index:i+1,date:item.date,text:item.text,score:result.score,previous:Number(before.toFixed(2)),after:Number(overall.toFixed(2)),delta:Number(delta.toFixed(2)),reasons:[
+   return {index:i+1,date:item.date,text:item.text,uri:typeof item.uri==="string"?item.uri:null,source:typeof item.source==="string"?item.source:null,score:result.score,previous:Number(before.toFixed(2)),after:Number(overall.toFixed(2)),delta:Number(delta.toFixed(2)),reasons:[
      ...(result.flags||[]).filter(f=>f.weight>0).map(f=>({id:f.id,label:f.label,type:"negative",confidence:f.confidence})),
      ...(result.positives||[]).map(p=>({id:p.id,label:p.label,type:"positive",confidence:"heuristic"}))
    ]};

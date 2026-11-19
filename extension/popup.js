@@ -1,10 +1,11 @@
 function refresh(){
- chrome.storage.local.get({myvibeHistory:[]},({myvibeHistory})=>{
+ chrome.storage.local.get({myvibeHistory:[],sharingPreference:{visibility:"private"}},({myvibeHistory,sharingPreference})=>{
   // Never mix scores from incompatible scoring versions.
   const posts=myvibeHistory.filter(p=>MyVibeEvidence.isLocalSample(p));
   const score=MyVibeHistory.rollingScore(posts);
   document.getElementById("score").textContent=score.toFixed(1);
   document.getElementById("score-label").textContent=MyVibesGauge.label(score);
+  document.querySelector(".privacy small").textContent=MyVibeSharing.description(sharingPreference);
   document.getElementById("count").textContent=posts.length;
   document.getElementById("share").textContent=posts.length?Math.round(posts.filter(p=>p.flags.length===0).length/posts.length*100)+"%":"—";
   document.getElementById("empty").hidden=posts.length>0;
