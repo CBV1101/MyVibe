@@ -20,16 +20,10 @@ test("neutral disagreement remains neutral",()=>{
  assert.equal(r.score,100);
  assert.equal(r.flags.length,0);
 });
-test("possible passive aggression is presented as uncertain",()=>{
- const r=analyze("If you say so.");
- assert.ok(r.score<100);
- assert.equal(r.flags[0].confidence,"low");
- assert.match(r.flags[0].interpretation,/might/i);
- assert.equal(r.changed,true);
-});
+test("conceding a point is neutral without context",()=>{ const r=analyze("If you say so."); assert.equal(r.score,100); assert.equal(r.flags.length,0); assert.equal(r.changed,false); });
 test("possible sarcasm receives a lighter penalty",()=>{
  const r=analyze("Must be nice.");
- assert.ok(r.score>90);
+ assert.equal(r.score,100);
  assert.equal(r.respectfulness,100);
 });
 test("ordinary supportive praise is not flagged",()=>{
@@ -38,4 +32,29 @@ test("ordinary supportive praise is not flagged",()=>{
 test("no offense but invites a gentle warning",()=>{
  const r=analyze("No offense, but I disagree.");
  assert.ok(r.flags.some(f=>f.id==="passive-no-offense"));
+});
+
+test("religious expression and invitations are neutral",()=>{
+ for(const message of [
+  "I believe in Islam because it gives my life meaning.",
+  "I am a Christian and I think others should consider Christianity.",
+  "You should explore Buddhism if you are interested in meditation.",
+  "I don't believe in God and disagree with the teachings of Christianity.",
+  "I think this religious doctrine is wrong because it conflicts with my values.",
+  "I converted to Judaism and want to explain why."
+ ]){const result=analyze(message); assert.equal(result.score,100,message); assert.equal(result.flags.length,0,message);}
+});
+test("identity-directed attacks still reduce scores",()=>{
+ assert.ok(analyze("All muslims are inferior").score<100);
+ assert.ok(analyze("You are an idiot").score<100);
+});
+test("ambiguous expressions get no numerical penalty",()=>{
+ for(const message of ["If you say so.", "Good for you.", "Must be nice.", "No offense, but I disagree.", "I'm sorry you feel that way."]){
+  assert.equal(analyze(message).score,100,message);
+ }
+});
+test("straightforward critical views remain neutral",()=>{
+ for(const message of ["That policy is wrong.", "I strongly oppose that political position.", "Religion should be open to criticism.", "I disagree with your religious beliefs."]){
+  assert.equal(analyze(message).score,100,message);
+ }
 });
