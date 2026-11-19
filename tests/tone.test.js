@@ -49,7 +49,7 @@ test("gratitude, empathy and kindness raise scores",()=>{
 });
 test("emoji alone cannot inflate a score",()=>{
  assert.equal(analyze("❤️❤️❤️❤️❤️").score,50);
- assert.ok(analyze("You got this! ❤️").score>analyze("You got this!").score);
+ assert.equal(analyze("You got this! ❤️").score,analyze("You got this!").score);
 });
 test("praise can't wash away explicit personal attacks",()=>{
  const r=analyze("Congratulations! You are an idiot! ❤️");
@@ -71,3 +71,36 @@ test("hostile language can generate optional rewrite",()=>{
  assert.match(r.suggestion,/focus on the issue/);
 });
 test("empty draft is unscored",()=>assert.equal(analyze(" ").score,null));
+
+test("graded penalties distinguish post, person, religion and profane personal insults",()=>{
+ const post=analyze("Your post is dumb").score;
+ const religion=analyze("Your religion is dumb").score;
+ const person=analyze("You are dumb").score;
+ const severe=analyze("You're a fucking idiot").score;
+ assert.equal(post,43);
+ assert.equal(religion,43);
+ assert.equal(person,22);
+ assert.equal(severe,2);
+ assert.ok(severe<person && person<post);
+});
+test("identity attacks are different from discussing religion",()=>{
+ assert.equal(analyze("I don't like Judaism as a religion.").score,50);
+ assert.equal(analyze("I hate Jewish people.").score,0);
+ assert.equal(analyze("I disagree with Christianity.").score,50);
+});
+test("identity-relevant emojis can prompt clarification without presuming hate",()=>{
+ for(const message of ["I don't like 👨‍❤️‍👨", "I don't like ✡️"]){
+  const r=analyze(message);
+  assert.equal(r.score,50,message);
+  assert.ok(r.flags.some(f=>f.kind==="context"&&f.weight===0),message);
+ }
+});
+test("food emoji is ordinary neutral expression",()=>{
+ const r=analyze("I don't like 🍔");
+ assert.equal(r.score,50);
+ assert.equal(r.flags.length,0);
+});
+test("emoji alone does not affect positive credit",()=>{
+ assert.equal(analyze("Congratulations ❤️").score,analyze("Congratulations").score);
+ assert.equal(analyze("❤️").score,50);
+});
