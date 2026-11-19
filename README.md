@@ -162,3 +162,7 @@ This is not yet integrated with extension account settings or any production bac
 ## Local account connection console
 
 The OAuth development service also serves a simple browser page at `http://127.0.0.1:4318/`. Once properly configured with hosted AT Protocol client metadata, a developer can start a Bluesky login, see the authenticated DID and disconnect. The server now enforces a localhost Host-header check and one-hour session expiry. This page does **not** connect the extension to the account or enable score publication; see `docs/bluesky-oauth.md`.
+
+## OAuth local onboarding improvement
+
+The account data page can now open a local Bluesky OAuth console without moving credentials into the extension. The OAuth development server defaults to the AT Protocol `http://localhost` virtual-client exception, supported by some authorization servers. Set `MYVIBE_ATPROTO_CLIENT_ID` to a real HTTPS-hosted client metadata URL if necessary. This does not enable cross-device identity, account-based private storage, public badges or authenticated scoring; live end-to-end OAuth QA remains pending.

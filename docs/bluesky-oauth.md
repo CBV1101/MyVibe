@@ -4,15 +4,19 @@
 
 The separate loopback service integrates the official @atproto/oauth-client-node SDK. The SDK handles PKCE, PAR, DPoP and protocol validation. The app additionally binds each callback to the browser that initiated the flow. Neither a handle nor a fetched public feed proves account ownership.
 
-## Before testing a real provider login
+## Testing a development login
 
-1. Publish AT Protocol client metadata at a public HTTPS URL on a domain you control. The auth server must fetch the document with HTTP 200 and application/json. Do not use a placeholder domain.
-2. For local prototype metadata, use the native public-client flow: token_endpoint_auth_method none, application_type native, dpop_bound_access_tokens true, scope atproto, response_types code, grant_types authorization_code and refresh_token, callback http://127.0.0.1:4318/oauth/callback. Follow the AT Protocol specification.
-3. Run npm install, then set MYVIBE_ATPROTO_CLIENT_ID to the actual hosted HTTPS client metadata URL and run npm run oauth:dev.
-4. On the same computer visit http://127.0.0.1:4318/oauth/start?handle=YOUR-HANDLE in your browser. The OAuth provider should then request consent.
-5. The callback returns a JSON confirmation of the DID only on success, and a local HttpOnly session cookie. GET http://127.0.0.1:4318/account shows local linked state. It always reports publicScore null and publicBadgeEnabled false.
+AT Protocol defines a special local development client ID: `http://localhost` with query parameters for a loopback `redirect_uri` and scopes. Authorization servers **may** support this exception; support is optional. The local server now defaults to:
 
-This proof of concept binds only to 127.0.0.1, has in-memory OAuth state/session stores, and loses all sessions on restart. Never expose the service publicly. The local connection is not synchronized to the browser extension or an account database. Do not claim an account is linked across devices.
+- Client ID: `http://localhost?redirect_uri=http%3A%2F%2F127.0.0.1%3A4318%2Foauth%2Fcallback&scope=atproto`
+- Redirect URI: `http://127.0.0.1:4318/oauth/callback`
+- Scope: `atproto`
+
+Run `npm install`, then `npm run oauth:dev`. Open `http://127.0.0.1:4318/` in the same browser that will complete login. If the authorization server does not support the localhost exception, publish AT Protocol-compliant client metadata at an HTTPS URL you control and set `MYVIBE_ATPROTO_CLIENT_ID=https://your-actual-domain.example/client-metadata.json` before starting the service.
+
+The extension's **My data and score evidence** page now includes an **Open local Bluesky account console** button. It simply opens the loopback page and does not import OAuth tokens or the authenticated DID into extension storage. This is a separate local session, not extension login or cross-device authentication.
+
+A live OAuth smoke test is still required, as mocked tests cannot establish that any particular authorization server accepts the development client ID. The browser page reports the resulting DID after authentication, and `GET /account` confirms local status.
 
 ## Security boundaries
 
@@ -40,4 +44,4 @@ The development OAuth service now serves a browser interface at `http://127.0.0.
 
 The account page uses same-origin JavaScript/CSS, a restrictive Content Security Policy, and a Host-header restriction to `127.0.0.1` and the running port to reduce DNS-rebinding risk. Local account sessions are removed from memory after one hour. The account endpoint reports **no public score** regardless of login state. This is a development console, not consumer login and not an extension OAuth connection.
 
-A real Bluesky login still cannot be tested until a valid publicly hosted AT Protocol OAuth client metadata document is configured. The end-to-end SDK/provider flow and browser behavior require manual validation before release.
+A real Bluesky login needs either an authorization server that accepts the protocol's optional localhost client-ID exception or a valid hosted HTTPS OAuth client metadata document. The end-to-end SDK/provider flow and browser behavior require manual validation before release.

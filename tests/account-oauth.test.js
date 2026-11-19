@@ -1,6 +1,6 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict");
-const {createAccountServer,createStore,makeOAuthClient}=require("../server/account-oauth.js");
+const {createAccountServer,createStore,makeOAuthClient,resolveClientId,LOCAL_CLIENT_ID,LOCAL_REDIRECT_URI}=require("../server/account-oauth.js");
 const did="did:plc:abcdefghijklmnopqrstuvwx";
 async function setup(callback){
  let returnedState=null,revoked=0;
@@ -19,7 +19,7 @@ const cookie=res=>(res.headers.get("set-cookie")||"").match(/mv_oauth=([^;]+)/)?
 const noRedirect={redirect:"manual"};
 test("store roundtrip and hosted metadata requirement",async()=>{
  const store=createStore();await store.set("k",{a:1});assert.deepEqual(await store.get("k"),{a:1});await store.del("k");assert.equal(await store.get("k"),undefined);
- await assert.rejects(makeOAuthClient("http://invalid.example/metadata.json"),/hosted HTTPS/);
+ await assert.rejects(makeOAuthClient("http://invalid.example/metadata.json"),/public HTTPS/);
 });
 test("account starts unlinked and never publishes a badge",async()=>{
  await setup(async({base})=>{
@@ -109,4 +109,21 @@ test("local account session expires after one hour without becoming public",asyn
   const expired=await (await fetch(base+"/account",{headers:{Cookie:"mv_session="+sid}})).json();assert.equal(expired.linked,false);
   assert.equal(expired.publicScore,null);
  }finally{await new Promise(resolve=>server.close(resolve))}
+});
+
+test("localhost development client ID follows AT Protocol loopback exception",()=>{
+ const id=resolveClientId();
+ assert.equal(id,LOCAL_CLIENT_ID);
+ assert.equal(id,resolveClientId("localhost"));
+ const parsed=new URL(id);
+ assert.equal(parsed.origin,"http://localhost");
+ assert.equal(parsed.searchParams.get("redirect_uri"),LOCAL_REDIRECT_URI);
+ assert.equal(parsed.searchParams.get("scope"),"atproto");
+ assert.equal(new URL(LOCAL_REDIRECT_URI).hostname,"127.0.0.1");
+});
+test("client ID rejects unsafe remote URLs and preserves hosted HTTPS metadata",()=>{
+ for(const value of ["http://evil.example/metadata.json","https://user:pass@example.org/metadata","https://example.org/doc#fragment","file:///tmp/client.json"]){
+  assert.throws(()=>resolveClientId(value),value);
+ }
+ assert.equal(resolveClientId("https://auth.example.org/client-metadata.json"),"https://auth.example.org/client-metadata.json");
 });
