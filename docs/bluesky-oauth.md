@@ -33,3 +33,11 @@ OAuth can establish account possession, but it cannot prove that fetched histori
 Run npm run check and npm test. Tests use a mocked OAuth SDK and do not contact a real provider. Live login requires hosted metadata and a consenting test account.
 
 Sources: https://atproto.com/specs/oauth and https://atproto.com/guides/about-oauth and https://github.com/bluesky-social/atproto/blob/main/packages/oauth/oauth-client-node/README.md
+
+## Local account console
+
+The development OAuth service now serves a browser interface at `http://127.0.0.1:4318/`. Enter your Bluesky handle to start OAuth; after authorization, return to the root page to view the authenticated DID or disconnect. The callback currently displays a JSON confirmation rather than automatically redirecting to the console.
+
+The account page uses same-origin JavaScript/CSS, a restrictive Content Security Policy, and a Host-header restriction to `127.0.0.1` and the running port to reduce DNS-rebinding risk. Local account sessions are removed from memory after one hour. The account endpoint reports **no public score** regardless of login state. This is a development console, not consumer login and not an extension OAuth connection.
+
+A real Bluesky login still cannot be tested until a valid publicly hosted AT Protocol OAuth client metadata document is configured. The end-to-end SDK/provider flow and browser behavior require manual validation before release.
