@@ -12,6 +12,7 @@ function refresh(){
   document.getElementById("badge-container").replaceChildren(MyVibesGauge.createBadge(score));
  });
 }
+document.getElementById("insights").addEventListener("click",()=>chrome.runtime.openOptionsPage());
 document.getElementById("clear").addEventListener("click",()=>{
  if(confirm("Delete your locally saved vibe history?"))chrome.storage.local.remove("myvibeHistory",refresh);
 });
