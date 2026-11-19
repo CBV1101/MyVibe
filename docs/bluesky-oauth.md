@@ -59,3 +59,11 @@ The result is rechecked for DID consistency. The account console uses the existi
 - This builds a real ownership-bound *review* path only. It is not a shared cloud user identity, durable posting proof, or entitlement control. Manual live OAuth provider and browser QA remain outstanding.
 
 The fetcher and account API have mocked regression tests for DID binding, unrelated posts, replayed requests and cross-site attempts.
+
+## Account review safeguards and filters
+
+The account review endpoint now requires the per-session CSRF header even for reads. This prevents a generic local request, including a cross-site navigation, from fetching the author's post sample without the same-origin account page participating. Only a narrow set of server-defined fields is returned, and messages are bounded by the same 4,000-character rule as the public importer. No response may contain a public reputation score.
+
+The console rejects malformed/foreign/duplicate posts, sorts the review chronologically and displays summary counts and positive/neutral/negative filters. Timeline entries remain local to the browser tab; moving between accounts, disconnection, or an unavailable account invalidates in-memory results. Clearing in-progress reviews also restores the Analyze button. This addresses a stale-response/UI race discovered in the development implementation.
+
+**Next release gate:** Perform a real account OAuth and browser smoke test, validate scoring against human-reviewed samples, and assess API/coverage limitations. These automated checks do not establish real-provider compatibility.
