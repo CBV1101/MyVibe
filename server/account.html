@@ -9,7 +9,7 @@
 <p>Only a bounded sample of public posts attributed to your authenticated Bluesky DID is retrieved. Nothing is persisted here. The resulting score is experimental and never published.</p>
 <button id="review-posts" type="button">Analyze my recent public posts</button>
 <p id="review-status" role="status"></p>
-<div id="review-summary" hidden><strong id="review-score"></strong><p id="review-coverage"></p><div id="review-entries"></div><button id="clear-review" type="button">Clear analysis</button></div>
+<div id="review-summary" hidden><strong id="review-score"></strong><p id="review-coverage"></p><p id="review-breakdown"></p><label for="review-filter">Show messages</label><select id="review-filter"><option value="all">All</option><option value="negative">Lowered message scores</option><option value="positive">Raised message scores</option><option value="neutral">Neutral</option></select><p id="review-visible"></p><div id="review-entries"></div><button id="clear-review" type="button">Clear analysis</button></div>
 <h2>Disconnect</h2><p>Disconnect removes this local account session. No public profile or score is published.</p><button id="disconnect" type="button">Disconnect local account</button><p id="disconnect-status" role="status"></p></section>
 <footer>This page only connects to the local service at 127.0.0.1. No subscription, profile sharing or public badge service exists yet.</footer>
-</main><script src="/tone.js"></script><script src="/history.js"></script><script src="/archive.js"></script><script src="/trace.js"></script><script src="/account-ui.js"></script></body></html>
+</main><script src="/tone.js"></script><script src="/history.js"></script><script src="/archive.js"></script><script src="/trace.js"></script><script src="/owner-review.js"></script><script src="/account-ui.js"></script></body></html>
