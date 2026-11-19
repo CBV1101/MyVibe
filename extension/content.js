@@ -50,7 +50,7 @@
   const result=MyVibeTone.analyze(textOf(active));
   if(result.score===null)return;
   chrome.storage.local.get({myvibeHistory:[]},({myvibeHistory})=>{
-   const entry={score:result.score,respectfulness:result.respectfulness,constructiveness:result.constructiveness,at:Date.now(),platform:location.hostname,flags:result.flags.map(f=>f.id)};
+   const entry={schemaVersion:2,score:result.score,respectfulness:result.respectfulness,constructiveness:result.constructiveness,at:Date.now(),platform:location.hostname,flags:result.flags.map(f=>f.id),positiveSignals:result.positives.map(p=>p.id)};
    chrome.storage.local.set({myvibeHistory:[...myvibeHistory,entry].slice(-500)});
    panel.querySelector("[data-record]").textContent="Added ✓";
    setTimeout(()=>panel.querySelector("[data-record]").textContent="Add to my vibe history",1200);
