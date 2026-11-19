@@ -97,3 +97,11 @@ Rule-based language checks miss most nuance, other languages, quotations and com
 The private extension popup includes a continuous, gapless semicircle meter (deep red → orange → yellow at 50 → light green → saturated green), a needle pointing to the numerical score, and a compact inline-style MyVibes badge with number and micro-gradient. These are generated using a reusable dependency-free SVG/DOM component in `extension/gauge.js`, not a static picture. Every color presentation is paired with the numeric score and an accessible label.
 
 **Privacy boundary:** The badge is a preview in the account owner's extension only. Do **not** inject scores beside other people's usernames yet: we do not have verified account attribution, public-score consent, or a remotely retrievable score service. The future rollout must respect the profile owner's sharing preference, support unknown scores rather than inventing them, and avoid displaying self-saved draft scores as public reputation.
+
+## Archive Insights prototype (local-only Pro feature preview)
+
+The extension popup contains **Explore archive insights (Pro preview)**, opening `extension/insights.html`. Import your own CSV (`text` column and optional `date`) or JSON (array of strings/objects, or an object containing `posts` or `messages`). This builds a local, temporary per-message explanation timeline, classifications and a hypothetical rolling Vibe Score. A built-in example is provided. Files and text **never leave the page or persist to storage**. Reloading clears the import.
+
+This is a preview of a planned paid feature; **there is no billing, entitlement enforcement, public profile, account sync, or platform archive adapter yet**. User imports are unverified and cannot represent a complete account's posting history. In particular, never automatically publish this estimated archive score. Limits: 8 MB / 5,000 messages / 4,000 characters per message.
+
+Run `npm test` for archive-parser and scoring regression tests.
