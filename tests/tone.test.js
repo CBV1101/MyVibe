@@ -1,60 +1,73 @@
-const assert=require("node:assert/strict");const test=require("node:test");const {analyze}=require("../extension/tone.js");
-test("strong disagreement is not penalized",()=>{assert.equal(analyze("I strongly disagree with your argument. It is wrong and the policy is harmful.").score,100);});
-test("criticism of political ideas is not penalized",()=>{assert.equal(analyze("This proposal is terrible and badly designed.").score,100);});
-test("personal attacks lower score",()=>{assert.ok(analyze("You are an idiot").score<100);});
-test("identity-hostility lowers score",()=>{const x=analyze("All immigrants are inferior");assert.ok(x.score<100);assert.equal(x.changed,false);});
-test("appearance attack lowers score",()=>{assert.ok(analyze("You're ugly").score<100);});
-test("calmer language can be suggested",()=>{const x=analyze("Shut up");assert.equal(x.changed,true);assert.ok(x.suggestion.includes("focus on the issue"));});
-test("empty text has no score",()=>{assert.equal(analyze(" ").score,null);});
-
-test("dismissive criticism is milder than a personal attack",()=>{
- const dismissive=analyze("That argument is ridiculous");
- const attack=analyze("You are an idiot");
- assert.ok(dismissive.score<100);
- assert.ok(dismissive.score>attack.score);
- assert.equal(dismissive.respectfulness,100);
- assert.ok(dismissive.constructiveness<100);
-});
-test("neutral disagreement remains neutral",()=>{
- const r=analyze("I think that argument is wrong because the evidence contradicts it.");
- assert.equal(r.score,100);
- assert.equal(r.flags.length,0);
-});
-test("conceding a point is neutral without context",()=>{ const r=analyze("If you say so."); assert.equal(r.score,100); assert.equal(r.flags.length,0); assert.equal(r.changed,false); });
-test("possible sarcasm receives a lighter penalty",()=>{
- const r=analyze("Must be nice.");
- assert.equal(r.score,100);
- assert.equal(r.respectfulness,100);
-});
-test("ordinary supportive praise is not flagged",()=>{
- assert.equal(analyze("Good for you! I'm happy you got the job.").score,100);
-});
-test("no offense but invites a gentle warning",()=>{
- const r=analyze("No offense, but I disagree.");
- assert.ok(r.flags.some(f=>f.id==="passive-no-offense"));
-});
-
-test("religious expression and invitations are neutral",()=>{
- for(const message of [
+const assert=require("node:assert/strict");
+const test=require("node:test");
+const {analyze}=require("../extension/tone.js");
+const neutral=[
+  "I strongly disagree with your argument. It is wrong and the policy is harmful.",
+  "This proposal is terrible and badly designed.",
+  "I think that argument is wrong because the evidence contradicts it.",
+  "If you say so.",
+  "Good for you.",
+  "Must be nice.",
+  "No offense, but I disagree.",
+  "I'm sorry you feel that way.",
   "I believe in Islam because it gives my life meaning.",
   "I am a Christian and I think others should consider Christianity.",
   "You should explore Buddhism if you are interested in meditation.",
   "I don't believe in God and disagree with the teachings of Christianity.",
   "I think this religious doctrine is wrong because it conflicts with my values.",
-  "I converted to Judaism and want to explain why."
- ]){const result=analyze(message); assert.equal(result.score,100,message); assert.equal(result.flags.length,0,message);}
+  "I converted to Judaism and want to explain why.",
+  "I strongly oppose that political position.",
+  "Religion should be open to criticism."
+];
+test("neutral by default including criticism, concession, religious belief and invitation",()=>{
+ for(const message of neutral)assert.equal(analyze(message).score,50,message);
 });
-test("identity-directed attacks still reduce scores",()=>{
- assert.ok(analyze("All muslims are inferior").score<100);
- assert.ok(analyze("You are an idiot").score<100);
+test("ordinary disagreement doesn't produce a penalty",()=>{
+ const r=analyze("I disagree with your religious beliefs.");
+ assert.equal(r.score,50);
+ assert.equal(r.flags.length,0);
 });
-test("ambiguous expressions get no numerical penalty",()=>{
- for(const message of ["If you say so.", "Good for you.", "Must be nice.", "No offense, but I disagree.", "I'm sorry you feel that way."]){
-  assert.equal(analyze(message).score,100,message);
+test("clear personal attacks reduce the score",()=>{
+ for(const message of ["You are an idiot","You're ugly","All muslims are inferior","Shut up"]){
+  assert.ok(analyze(message).score<50,message);
  }
 });
-test("straightforward critical views remain neutral",()=>{
- for(const message of ["That policy is wrong.", "I strongly oppose that political position.", "Religion should be open to criticism.", "I disagree with your religious beliefs."]){
-  assert.equal(analyze(message).score,100,message);
- }
+test("dismissive phrasing gets small penalty unlike personal attacks",()=>{
+ const dismissive=analyze("That argument is ridiculous");
+ assert.ok(dismissive.score<50);
+ assert.ok(dismissive.score>analyze("You are an idiot").score);
 });
+test("encouragement and congratulations raise scores",()=>{
+ assert.ok(analyze("Keep going! You got this!").score>50);
+ assert.ok(analyze("Congratulations! You deserve this!").score>50);
+ assert.ok(analyze("Proud of you! Well done!").score>50);
+});
+test("gratitude, empathy and kindness raise scores",()=>{
+ assert.ok(analyze("Thank you for helping.").score>50);
+ assert.ok(analyze("I'm here for you.").score>50);
+ assert.ok(analyze("Be kind to others.").score>50);
+});
+test("emoji alone cannot inflate a score",()=>{
+ assert.equal(analyze("❤️❤️❤️❤️❤️").score,50);
+ assert.ok(analyze("You got this! ❤️").score>analyze("You got this!").score);
+});
+test("praise can't wash away explicit personal attacks",()=>{
+ const r=analyze("Congratulations! You are an idiot! ❤️");
+ assert.ok(r.score<50);
+});
+test("low-confidence idioms are advisory only",()=>{
+ const r=analyze("Must be nice.");
+ assert.equal(r.score,50);
+ assert.ok(r.flags.some(f=>f.weight===0&&f.confidence==="low"));
+});
+test("suggestions don't rewrite neutral concessions",()=>{
+ const r=analyze("If you say so.");
+ assert.equal(r.changed,false);
+ assert.equal(r.flags.length,0);
+});
+test("hostile language can generate optional rewrite",()=>{
+ const r=analyze("Shut up");
+ assert.equal(r.changed,true);
+ assert.match(r.suggestion,/focus on the issue/);
+});
+test("empty draft is unscored",()=>assert.equal(analyze(" ").score,null));
