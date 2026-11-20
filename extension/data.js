@@ -18,7 +18,7 @@
     "Local account console opened. Run npm run oauth:dev if the page cannot connect.";
   });
  });
- $("save-sharing").addEventListener("click",()=>{const visibility=$("sharing-interest").checked?"interested":"private";chrome.storage.local.set({sharingPreference:{visibility}},refresh);});
+ $("save-sharing").addEventListener("click",()=>{const visibility=$("sharing-interest").checked?"interested":"private";chrome.storage.local.set({sharingPreference:{visibility}},()=>{if(chrome.runtime.lastError){$("sharing-status").textContent="Could not save sharing preference. Please retry.";}else refresh();});});
  $("export").addEventListener("click",async ()=>{
   const data=await read();
   // Exclude secrets. A local companion access token is never exported.
@@ -31,8 +31,8 @@
  });
  $("delete").addEventListener("click",()=>{
   if(!confirm("Delete all locally saved MyVibes history and AI settings from this browser?"))return;
-  chrome.storage.local.remove(["myvibeHistory","aiEnabled","aiToken","sharingPreference"],()=>{
-   $("delete-status").textContent="Local samples, AI settings and sharing preference deleted.";refresh();
+  chrome.storage.local.remove(["myvibeHistory","aiEnabled","aiToken","sharingPreference","myvibeCoachSettings"],()=>{
+   $("delete-status").textContent=chrome.runtime.lastError?"Could not delete local data. Please retry.":"Local samples, AI settings, coach preferences and sharing preference deleted.";refresh();
   });
  });
  refresh();
