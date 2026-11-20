@@ -4,7 +4,7 @@
  window.__myVibeInstalled=true;
  const selectors='textarea,[contenteditable="true"],[role="textbox"]';
  let active=null,review=null,requestSerial=0,savePending=false,coachEnabled=false;
- const site=location.hostname.replace(/^www\\./,"").replace(/^twitter\\.com$/,"x.com");
+ const site=location.hostname.replace(/^www\./,"").replace(/^twitter\.com$/,"x.com");
  function allowed(settings){return settings?.enabled!==false&&(!Array.isArray(settings?.disabledSites)||!settings.disabledSites.includes(site));}
  const panel=document.createElement("aside");
  panel.id="myvibe-tone-panel";
