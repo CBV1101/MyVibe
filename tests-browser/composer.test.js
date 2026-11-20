@@ -264,3 +264,14 @@ test("navigation and search text fields do not trigger coaching",async t=>{
  await page.waitForTimeout(350);
  assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
 });
+
+test("re-enabling on a still-focused composer immediately restores coaching",async t=>{
+ const page=await setup(t);
+ await draft(page,"I respectfully disagree.");
+ await page.evaluate(()=>chrome.storage.local.set({myvibeCoachSettings:{enabled:false,disabledSites:[]}}));
+ await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
+ assert.equal(await page.locator("#draft").evaluate(node=>node===document.activeElement),true);
+ await page.evaluate(()=>chrome.storage.local.set({myvibeCoachSettings:{enabled:true,disabledSites:[]}}));
+ await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
+ assert.match(await page.locator("[data-status]").textContent(),/50\/100/);
+});
