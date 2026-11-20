@@ -3,7 +3,7 @@
  if(window.__myVibeInstalled)return;
  window.__myVibeInstalled=true;
  const selectors='textarea,[contenteditable="true"],[role="textbox"]';
- let active=null,review=null,requestSerial=0,savePending=false,coachEnabled=false;
+ let active=null,review=null,requestSerial=0,savePending=false,coachEnabled=false,sessionPaused=false;
  const site=location.hostname.replace(/^www\./,"").replace(/^twitter\.com$/,"x.com");
  function allowed(settings){return settings?.enabled!==false&&(!Array.isArray(settings?.disabledSites)||!settings.disabledSites.includes(site));}
  const panel=document.createElement("aside");
@@ -16,14 +16,16 @@
  function textOf(node){return node?.matches("textarea,input")?node.value:(node?.innerText||"");}
  function isEditor(node){
   if(!node||panel.contains(node)||!node.matches?.(selectors))return false;
+  if(node.matches('input,[contenteditable="false"]'))return false;
   if(node.closest('[aria-hidden="true"],[inert]')||node.disabled||node.readOnly||node.getAttribute("aria-readonly")==="true")return false;
-  if(node.closest('[role="search"],[role="navigation"],header,nav'))return false;
+  if(node.closest('[role="search"],[role="navigation"],header,nav,[data-myvibe-ignore]'))return false;
+  if(node.closest('form')?.querySelector('input[type="password"]'))return false;
   if(node.matches("textarea")&&node.type==="search")return false;
   if(node.matches("textarea"))return true;
   // Only actual editable rich-text roots, not decorative textbox containers.
-  return node.isContentEditable;
+  return node.isContentEditable&&!node.parentElement?.closest('[contenteditable="true"]');
  }
- function usableEditor(node){return coachEnabled&&!!node&&document.contains(node)&&isEditor(node)&&node.getClientRects().length>0;}
+ function usableEditor(node){return coachEnabled&&!sessionPaused&&!!node&&document.contains(node)&&isEditor(node)&&node.getClientRects().length>0;}
  function disableCoach(){coachEnabled=false;active=null;clearReview();panel.style.display="none";el("[data-context-value]").value="";}
  function clearReview(){
   review=null;requestSerial++;
@@ -66,17 +68,18 @@
   const enabled=allowed(changes.myvibeCoachSettings.newValue);
   if(!enabled)disableCoach();else{
    coachEnabled=true;
+   sessionPaused=false;
    const focused=document.activeElement;
    if(isEditor(focused)){active=focused;clearReview();draw();}
   }
  });
  document.addEventListener("focusin",event=>{
-  if(!coachEnabled||!isEditor(event.target))return;
+  if(!coachEnabled||sessionPaused||!isEditor(event.target))return;
   if(active!==event.target){active=event.target;clearReview();el("[data-context-value]").value="";}
   draw();
  },true);
  document.addEventListener("input",event=>{
-  if(!coachEnabled||!isEditor(event.target))return;
+  if(!coachEnabled||sessionPaused||!isEditor(event.target))return;
   if(active!==event.target){active=event.target;el("[data-context-value]").value="";}
   clearReview();clearTimeout(debounce);debounce=setTimeout(draw,220);
  },true);
@@ -87,7 +90,7 @@
   if(active&&!usableEditor(active)){active=null;clearReview();panel.style.display="none";}
  });
  observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","style","class","aria-hidden","inert","contenteditable","readonly","disabled"]});
- el("[data-close]").addEventListener("click",()=>{active=null;clearReview();panel.style.display="none";});
+ el("[data-close]").addEventListener("click",()=>{sessionPaused=true;active=null;clearReview();panel.style.display="none";el("[data-context-value]").value="";});
  el("[data-rewrite]").addEventListener("click",()=>{
   if(!usableEditor(active))return;
   const {suggestion,changed}=MyVibeTone.analyze(textOf(active));if(changed)insertIntoEditor(active,suggestion);
