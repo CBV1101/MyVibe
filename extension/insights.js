@@ -43,8 +43,8 @@
  }
  function load(records,provenance=null){visibleCount=100;$("search").value="";$("filter").value="all";$("include-text").checked=false;report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;$("export-status").textContent="";setError(null);render();}
  function download(content,filename,mime){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}
- $("export-json").addEventListener("click",()=>{if(!report)return;download(JSON.stringify(MyVibeTrace.exportDocument(report,source,{includeText:$("include-text").checked}),null,2),"myvibes-analysis.json","application/json");$("export-status").textContent="Export created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.")";});
- $("export-csv").addEventListener("click",()=>{if(!report)return;download(MyVibeTrace.reportCsv(report,{includeText:$("include-text").checked}),"myvibes-analysis.csv","text/csv");$("export-status").textContent="CSV created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.")";});
+ $("export-json").addEventListener("click",()=>{if(!report)return;download(JSON.stringify(MyVibeTrace.exportDocument(report,source,{includeText:$("include-text").checked}),null,2),"myvibes-analysis.json","application/json");$("export-status").textContent="Export created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.");});
+ $("export-csv").addEventListener("click",()=>{if(!report)return;download(MyVibeTrace.reportCsv(report,{includeText:$("include-text").checked}),"myvibes-analysis.csv","text/csv");$("export-status").textContent="CSV created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.");});
  $("bluesky-fetch").addEventListener("click",async()=>{
   const id=++requestId,button=$("bluesky-fetch");
   const handle=$("bluesky-handle").value;
