@@ -311,3 +311,41 @@ test("nested contenteditable children do not become independent draft editors",a
  await page.locator("#outer").fill("Outer draft");
  await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
 });
+
+test("Escape dismisses coach for current page without changing the draft",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you for your thoughtful reply!");
+ await page.locator("#draft").press("Escape");
+ await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
+ assert.equal(await page.locator("#draft").inputValue(),"Thank you for your thoughtful reply!");
+ await page.locator("#draft").fill("You are an idiot.");
+ await page.waitForTimeout(300);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+});
+test("coach repositions on viewport changes and hides offscreen without discarding draft",async t=>{
+ const page=await setup(t);
+ await page.evaluate(()=>{
+  document.body.style.height="2200px";
+  document.querySelector("#draft").style.cssText="position:absolute;top:120px;left:100px;width:420px;height:90px";
+ });
+ await draft(page,"I respectfully disagree.");
+ const first=await page.locator("#myvibe-tone-panel").boundingBox();
+ await page.evaluate(()=>{document.querySelector("#draft").style.left="360px";window.dispatchEvent(new Event("resize"));});
+ await page.waitForFunction(()=>parseFloat(document.querySelector("#myvibe-tone-panel").style.left)>300);
+ const moved=await page.locator("#myvibe-tone-panel").boundingBox();
+ assert.ok(moved.x>first.x+150);
+ await page.evaluate(()=>window.scrollTo(0,1000));
+ await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
+ assert.equal(await page.locator("#draft").inputValue(),"I respectfully disagree.");
+ await page.evaluate(()=>window.scrollTo(0,0));
+ await page.locator("#draft").focus();
+ await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
+});
+test("closing coach cancels scheduled redraw after typing",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you!");
+ await page.locator("#draft").fill("You are an idiot.");
+ await page.locator("[data-close]").click();
+ await page.waitForTimeout(400);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+});

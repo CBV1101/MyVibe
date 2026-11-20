@@ -5,10 +5,10 @@ A privacy-first browser extension for constructive online conversations.
 ## Guiding principle
 **Criticism and disagreement never lower the score merely because they are critical or negative.** Criticize ideas, policies, behavior or arguments freely. MyVibe is **neutral by default**, distinguishes constructive disagreement from dismissive phrasing, and focuses on **personal attacks**. Name-calling, insults about appearance, and identity-targeted hostility (race, sex, gender, sexuality, religion, disability, etc.) receive more severe penalties. Even when criticism is harsh, criticism itself is not a personal attack. Scoring may still be inaccurate, particularly with sarcasm and quotations.
 
-## Current prototype (v0.5)
+## Current beta prototype (v0.8)
 - Chrome/Edge Manifest V3 extension for X, Reddit, Threads and Bluesky.
 - Inline tone coach for textarea and contenteditable text boxes.
-- Local **rule-based** detection of a small set of insults, identity-directed hostility, dismissive phrasing and potentially passive-aggressive expressions; **AI is not connected yet**. Passive-aggressive detection is particularly context-dependent and advisory only.
+- Local **rule-based** detection of a small set of insults, identity-directed hostility, dismissive phrasing and potentially passive-aggressive expressions; **AI is available only through an explicitly configured local companion and a user click**. Passive-aggressive detection is particularly context-dependent and advisory only.
 - Optional suggested rewrites for a few patterns, preserving author choice.
 - Draft score from 0–100 with a **neutral baseline of 50**. Meaningful encouragement, congratulations, gratitude, empathy, kindness and specific compliments increase the score; personal attacks reduce it. Unambiguous dismissive phrasing can carry a small penalty, and ambiguous phrases have no numerical penalty. All weights remain provisional. **Scores are heuristic, not assessments of character.**
 - Explicitly opt-in to storing a sample via **Add to my vibe history**.
@@ -16,7 +16,7 @@ A privacy-first browser extension for constructive online conversations.
 - No post text sent to servers or stored. Only score, categories, hostname and timestamp saved locally.
 - Public sharing unavailable until proper accounts, consent and protections are built.
 
-## Install locally
+## Beta interaction and privacy controls\n- Escape or the coach close button pauses coaching for the current page session; the popup controls global and individual-platform opt-outs.\n- The coach follows supported editors as the viewport changes and hides while an editor is offscreen. It does not publish or automatically save drafts.\n- Optional AI analysis is a separate explicit action and can be disabled at any time. Consent changes cancel pending AI requests.\n- Local history samples do not include draft text; exports that can contain raw archive text require explicit opt-in.\n- Onboarding is available from **Getting started · Beta guide** in the extension popup.\n\n## Install locally
 1. Clone this repository.
 2. Go to `chrome://extensions` (or `edge://extensions`).
 3. Enable Developer mode.
