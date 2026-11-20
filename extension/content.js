@@ -65,6 +65,7 @@
   if(!usableEditor(active)){hideCoach();return;}
   const rect=active.getBoundingClientRect();
   if(rect.bottom<=0||rect.top>=window.innerHeight||rect.right<=0||rect.left>=window.innerWidth){panel.style.display="none";return;}
+  panel.style.display="block";
   const width=Math.min(350,window.innerWidth-16);
   panel.style.left=Math.max(8,Math.min(window.innerWidth-width-8,rect.left))+"px";
   const spaceBelow=window.innerHeight-rect.bottom,spaceAbove=rect.top;
@@ -81,7 +82,7 @@
    if(isEditor(focused)){active=focused;clearReview();draw();}
   }
  });
- window.addEventListener("scroll",()=>{if(active&&panel.style.display!=="none")positionCoach();},{capture:true,passive:true});
+ window.addEventListener("scroll",()=>{if(active)positionCoach();},{capture:true,passive:true});
  window.addEventListener("resize",()=>{if(active&&panel.style.display!=="none")positionCoach();},{passive:true});
  document.addEventListener("keydown",event=>{
   if(event.key==="Escape"&&panel.style.display!=="none"&&(panel.contains(document.activeElement)||document.activeElement===active)){
