@@ -3,25 +3,30 @@
  "use strict";
  const LIMIT=5000,MAX_TEXT=4000;
  function csvRows(input){
-  const rows=[];let row=[],field="",quoted=false;
+  // RFC-style CSV state machine: reject stray quotes, unterminated quoted fields,
+  // and characters after closing quotes instead of silently changing the message.
+  const rows=[];let row=[],field="",state="start";
   const text=String(input).replace(/^\uFEFF/,"");
+  function finishField(){row.push(field);field="";state="start";}
+  function finishRow(){finishField();if(row.some(x=>x.trim()!==""))rows.push(row);row=[];if(rows.length>LIMIT+1)throw new Error("CSV exceeds 5,000 messages");}
   for(let i=0;i<text.length;i++){
    const c=text[i];
-   if(quoted){
-    if(c==='"'&&text[i+1]==='"'){field+='"';i++;}
-    else if(c==='"')quoted=false;
+   if(state==="quoted"){
+    if(c==='"'){if(text[i+1]==='"'){field+='"';i++;}else state="closed";}
     else field+=c;
-   }else if(c==='"')quoted=true;
-   else if(c===','){row.push(field);field="";}
-   else if(c==='\n'||c==='\r'){
-    if(c==='\r'&&text[i+1]==='\n')i++;
-    row.push(field);field="";
-    if(row.some(x=>x.trim()!==""))rows.push(row);
-    row=[];
-   }else field+=c;
+   }else if(state==="closed"){
+    if(c===",")finishField();
+    else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;finishRow();}
+    else throw new Error("Malformed CSV: unexpected text after closing quote");
+   }else if(c===",")finishField();
+   else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;finishRow();}
+   else if(c==='"'){
+    if(state!=="start")throw new Error("Malformed CSV: unexpected quote");
+    state="quoted";
+   }else{field+=c;state="plain";}
   }
-  if(quoted)throw new Error("Malformed CSV: unmatched quote");
-  row.push(field);if(row.some(x=>x.trim()!==""))rows.push(row);
+  if(state==="quoted")throw new Error("Malformed CSV: unmatched quote");
+  finishRow();
   return rows;
  }
  function parseArchive(raw,filename){
@@ -31,12 +36,15 @@
    const rows=csvRows(raw);
    if(!rows.length)throw new Error("CSV is empty");
    const headers=rows.shift().map(s=>s.trim().toLowerCase());
+   if(new Set(headers).size!==headers.length)throw new Error("CSV has duplicate column names");
+   if(rows.some(r=>r.length!==headers.length))throw new Error("CSV row has a different number of columns");
    const textIndex=headers.findIndex(s=>["text","content","message","post"].includes(s));
    const dateIndex=headers.findIndex(s=>["date","created_at","timestamp","time"].includes(s));
    if(textIndex<0)throw new Error('CSV needs a "text", "content", "message" or "post" column');
    records=rows.map((r,i)=>({text:r[textIndex],date:dateIndex>=0?r[dateIndex]:null,position:i}));
   }else if(/\.json$/i.test(filename)){
    const payload=JSON.parse(raw);
+   if(!payload||typeof payload!=="object")throw new Error("JSON must contain messages");
    const values=Array.isArray(payload)?payload:Array.isArray(payload.posts)?payload.posts:Array.isArray(payload.messages)?payload.messages:null;
    if(!values)throw new Error('JSON must be an array, {"posts":[...]}, or {"messages":[...]}');
    records=values.map((item,i)=>typeof item==="string"?{text:item,position:i}:{text:item?.text??item?.content??item?.message??item?.post,date:item?.date??item?.created_at??item?.timestamp,position:i});
@@ -52,7 +60,11 @@
    return {text:item.text.trim(),date,position:item.position};
   }).filter(Boolean);
   if(!normalized.length)throw new Error("No usable messages found");
-  return normalized.sort((a,b)=>a.date&&b.date?Date.parse(a.date)-Date.parse(b.date):a.position-b.position);
+  return normalized.sort((a,b)=>{
+   // Date-less entries keep source order and do not reorder dated entries across them.
+   if(!a.date||!b.date)return a.position-b.position;
+   return Date.parse(a.date)-Date.parse(b.date)||a.position-b.position;
+  });
  }
  function analyzeArchive(records,tone,history){
   if(!Array.isArray(records)||!tone||!history)throw new TypeError("Missing records or scoring engine");
