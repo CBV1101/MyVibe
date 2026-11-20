@@ -275,3 +275,39 @@ test("re-enabling on a still-focused composer immediately restores coaching",asy
  await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
  assert.match(await page.locator("[data-status]").textContent(),/50\/100/);
 });
+
+test("closing coach pauses it for this page session even after further typing",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you!");
+ await page.locator("[data-close]").click();
+ await page.locator("#draft").fill("You are an idiot.");
+ await page.waitForTimeout(300);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+ assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
+});
+test("password forms and explicitly excluded editors are never coached",async t=>{
+ const page=await setup(t);
+ await page.evaluate(()=>{
+  const root=document.createElement("div");
+  root.innerHTML='<form><input type="password"><textarea id="secret">Private</textarea></form><section data-myvibe-ignore><div id="ignored" contenteditable="true">Private</div></section>';
+  document.body.append(root);
+ });
+ await page.locator("#secret").fill("Do not inspect this");
+ await page.locator("#ignored").fill("Do not inspect this");
+ await page.waitForTimeout(300);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+});
+test("nested contenteditable children do not become independent draft editors",async t=>{
+ const page=await setup(t);
+ await page.evaluate(()=>{
+  const root=document.createElement("div");
+  root.id="outer";root.contentEditable="true";
+  root.innerHTML='<span id="nested" contenteditable="true">Nested draft</span>';
+  document.body.append(root);
+ });
+ await page.locator("#nested").focus();
+ await page.waitForTimeout(300);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+ await page.locator("#outer").fill("Outer draft");
+ await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
+});
