@@ -91,3 +91,32 @@ test("exports exclude message bodies unless explicitly selected",async t=>{
  await page.locator("#reset").click();
  assert.equal(await page.locator("#include-text").isChecked(),false);
 });
+
+test("invalid replacement import retains current analysis and allows retry",async t=>{
+ const page=await setup(t);
+ await page.locator("#example").click();
+ await page.locator("#search").fill("Congratulations");
+ assert.equal(await page.locator(".entry").count(),1);
+ await page.locator("#archive").setInputFiles({name:"invalid.json",mimeType:"application/json",buffer:Buffer.from("{broken")});
+ await page.locator("#error").waitFor({state:"visible"});
+ assert.equal(await page.locator("#count").textContent(),"6");
+ assert.equal(await page.locator(".entry").count(),1);
+ await page.locator("#archive").setInputFiles({name:"valid.json",mimeType:"application/json",buffer:Buffer.from('["Keep going!"]')});
+ await page.waitForFunction(()=>document.querySelector("#count").textContent==="1");
+ assert.equal(await page.locator("#error").isVisible(),false);
+ assert.equal(await page.locator("#search").inputValue(),"");
+});
+test("clearing analysis removes sensitive message nodes and resets filters",async t=>{
+ const page=await setup(t);
+ await page.locator("#archive").setInputFiles({name:"private.json",mimeType:"application/json",buffer:Buffer.from('["PRIVATE CONTENT 123"]')});
+ await page.waitForFunction(()=>document.querySelector("#count").textContent==="1");
+ assert.equal(await page.locator(".entry").count(),1);
+ await page.locator("#search").fill("PRIVATE");
+ await page.locator("#reset").click();
+ assert.equal(await page.locator(".entry").count(),0);
+ assert.equal(await page.locator("#timeline").textContent(),"");
+ assert.equal(await page.locator("#timeline-status").textContent(),"");
+ assert.equal(await page.locator("#search").inputValue(),"");
+ assert.equal(await page.locator("#filter").inputValue(),"all");
+ assert.equal(await page.locator("#results").isVisible(),false);
+});
