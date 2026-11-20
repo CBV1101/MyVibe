@@ -171,3 +171,39 @@ test("failed storage write reports failure and allows retry",async t=>{
  assert.equal(await page.locator("[data-record]").isDisabled(),false);
  assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),0);
 });
+
+test("hidden, readonly and disabled composers are not coached",async t=>{
+ const page=await setup(t);
+ await page.evaluate(()=>{
+  const root=document.createElement("section");
+  root.innerHTML='<textarea id="readonly" readonly>Do not edit</textarea><textarea id="disabled" disabled>Do not edit</textarea><div aria-hidden="true"><textarea id="hidden">Do not edit</textarea></div><div id="fake" role="textbox" tabindex="0">Not editable</div>';
+  document.body.append(root);
+ });
+ for(const id of ["readonly","disabled","hidden","fake"]){
+  await page.locator("#"+id).focus();
+  assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+ }
+});
+test("unmounting a composer invalidates pending AI and closes coach",async t=>{
+ const page=await setup(t);
+ await draft(page,"I disagree with this approach.");
+ await page.locator("[data-ai]").click();
+ await page.evaluate(()=>document.querySelector("#draft").remove());
+ await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
+ await page.evaluate(()=>window.__myvibePending.shift()({result:{score:50,confidence:"high",label:"neutral",interpretation:"Neutral",reason:"No attack",rewrite:"New text"}}));
+ assert.equal(await page.locator("[data-ai-preview]").isVisible(),false);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+});
+test("hidden composer invalidates pending rewrite and save",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you for your help!");
+ await page.evaluate(()=>{
+  window.__pendingSaveReads=[];
+  chrome.storage.local.get=(defaults,callback)=>window.__pendingSaveReads.push(()=>callback({...defaults,...window.__myvibeData}));
+ });
+ await page.locator("[data-record]").click();
+ await page.evaluate(()=>document.querySelector("#draft").hidden=true);
+ await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
+ await page.evaluate(()=>window.__pendingSaveReads.shift()());
+ assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),0);
+});
