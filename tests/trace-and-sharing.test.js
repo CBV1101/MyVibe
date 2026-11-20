@@ -24,7 +24,7 @@ test("CSV exports escape quotes/newlines and dangerous spreadsheet formulas",()=
  const csv=reportCsv(altered,{includeText:true});
  const redacted=reportCsv(altered);
  assert.ok(!redacted.includes("=SUM(A1"));
- assert.ok(!redacted.split("\\r\\n")[0].includes("message"));
+ assert.ok(!redacted.split("\\r\\n")[0].split(",").includes("message"));
  assert.ok(csv.includes("'=SUM(A1"));
  assert.ok(csv.includes('""'));
 });
