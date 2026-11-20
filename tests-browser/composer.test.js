@@ -17,6 +17,7 @@ async function setup(t){
  await page.addInitScript(()=>{
   window.__myvibeCalls=[];
   window.__myvibeData={myvibeHistory:[]};
+  window.__myvibeStorageListeners=[];
   window.__myvibePending=[];
   window.chrome={
    runtime:{
@@ -26,9 +27,9 @@ async function setup(t){
      window.__myvibePending.push(callback);
     }
    },
-   storage:{local:{
+   storage:{onChanged:{addListener:fn=>window.__myvibeStorageListeners.push(fn)},local:{
     get:(defaults,callback)=>callback({...defaults,...window.__myvibeData}),
-    set:(values,callback)=>{Object.assign(window.__myvibeData,values);callback?.()},
+    set:(values,callback)=>{Object.assign(window.__myvibeData,values);for(const [key,value] of Object.entries(values))window.__myvibeStorageListeners.forEach(fn=>fn({[key]:{newValue:value}},"local"));callback?.()},
     remove:(key,callback)=>{delete window.__myvibeData[key];callback?.()}
    }}
   };
@@ -206,4 +207,28 @@ test("hidden composer invalidates pending rewrite and save",async t=>{
  await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
  await page.evaluate(()=>window.__pendingSaveReads.shift()());
  assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),0);
+});
+
+test("global opt-out hides coach, invalidates pending AI and resumes on re-enable",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you for your help!");
+ await page.locator("[data-ai]").click();
+ await page.evaluate(()=>chrome.storage.local.set({myvibeCoachSettings:{enabled:false,disabledSites:[]}}));
+ await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
+ await page.evaluate(()=>window.__myvibePending.shift()({result:{score:50,confidence:"high",label:"neutral",interpretation:"Neutral",reason:"None",rewrite:"Changed"}}));
+ assert.equal(await page.locator("[data-ai-preview]").isVisible(),false);
+ await page.locator("#draft").fill("You are an idiot.");
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+ await page.evaluate(()=>chrome.storage.local.set({myvibeCoachSettings:{enabled:true,disabledSites:[]}}));
+ await page.locator("#draft").focus();
+ await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
+});
+test("platform opt-out disables only matching social platform",async t=>{
+ const page=await setup(t);
+ await page.evaluate(()=>chrome.storage.local.set({myvibeCoachSettings:{enabled:true,disabledSites:["bsky.app"]}}));
+ await page.locator("#draft").fill("Thank you!");
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+ await page.evaluate(()=>chrome.storage.local.set({myvibeCoachSettings:{enabled:true,disabledSites:["reddit.com"]}}));
+ await page.locator("#draft").focus();
+ await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
 });
