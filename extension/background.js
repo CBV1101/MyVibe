@@ -3,7 +3,10 @@ const ENDPOINT="http://127.0.0.1:4317/analyze";
 chrome.runtime.onMessage.addListener((message,sender,reply)=>{
  if(message?.type!=="MYVIBE_AI_ANALYZE")return false;
  // Only accept messages from this extension's content scripts on supported sites.
- const url=sender.url||"";
+ const url=sender?.url||"";
+ if(sender?.id!==chrome.runtime.id||sender?.frameId!==0){
+  reply({error:"Unsupported sender"});return false;
+ }
  if(!/^https:\/\/(x\.com|twitter\.com|www\.reddit\.com|www\.threads\.net|bsky\.app)\//.test(url)){
   reply({error:"Unsupported source"});return false;
  }
@@ -18,7 +21,11 @@ chrome.runtime.onMessage.addListener((message,sender,reply)=>{
    const response=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiToken},
      body:JSON.stringify({text,context}),signal:controller.signal});
    if(!response.ok)throw new Error("Local companion: "+response.status);
-   reply({result:await response.json()});
+   const raw=await response.text();
+   if(raw.length>16000)throw new Error("AI response too large");
+   const result=JSON.parse(raw);
+   if(!result||typeof result!=="object"||Array.isArray(result))throw new Error("Invalid AI response");
+   reply({result});
   }catch(_error){reply({error:"AI unavailable. Local analysis remains active."})}
   finally{clearTimeout(timeout)}
  });
