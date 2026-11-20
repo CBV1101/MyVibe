@@ -53,3 +53,24 @@ test("CSV rejects oversized row counts early",()=>{
 test("import does not accept a scalar JSON document",()=>{
  for(const value of ["null","42","true",'"a string"'])assert.throws(()=>parseArchive(value,"archive.json"));
 });
+
+test("partially dated archives preserve source order for reproducible scoring",()=>{
+ const rows=[
+  {text:"First",date:"2026-12-01"},
+  {text:"Second"},
+  {text:"Third",date:"2026-01-01"},
+  {text:"Fourth",date:"2026-05-01"}
+ ];
+ const parsed=parseArchive(JSON.stringify(rows),"archive.json");
+ assert.deepEqual(parsed.map(r=>r.text),rows.map(r=>r.text));
+ const scores=analyzeArchive(parsed,tone,history);
+ assert.deepEqual(scores.timeline.map(r=>r.text),rows.map(r=>r.text));
+});
+test("fully dated archives sort chronologically with stable ties",()=>{
+ const rows=[
+  {text:"Late",date:"2026-12-01"},
+  {text:"Early A",date:"2026-01-01"},
+  {text:"Early B",date:"2026-01-01"}
+ ];
+ assert.deepEqual(parseArchive(JSON.stringify(rows),"archive.json").map(r=>r.text),["Early A","Early B","Late"]);
+});
