@@ -38,7 +38,7 @@
    $("timeline").append(node);
   }
  }
- function load(records,provenance=null){report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;setError(null);render();}
+ function load(records,provenance=null){report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;$("export-status").textContent="";setError(null);render();}
  function download(content,filename,mime){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}
  $("export-json").addEventListener("click",()=>{if(!report)return;download(JSON.stringify(MyVibeTrace.exportDocument(report,source),null,2),"myvibes-analysis.json","application/json");$("export-status").textContent="Export created locally. It contains the analyzed message text.";});
  $("export-csv").addEventListener("click",()=>{if(!report)return;download(MyVibeTrace.reportCsv(report),"myvibes-analysis.csv","text/csv");$("export-status").textContent="CSV created locally. It contains the analyzed message text.";});
@@ -64,10 +64,16 @@
  });
  $("archive").addEventListener("change",async(e)=>{
   const file=e.target.files?.[0];if(!file)return;
-  try{if(file.size>8*1024*1024)throw new Error("Maximum file size is 8 MB");load(MyVibeArchive.parseArchive(await file.text(),file.name));}
-  catch(err){report=null;render();setError(err);}
+  const id=++requestId;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";
+  try{
+   if(file.size>8*1024*1024)throw new Error("Maximum file size is 8 MB");
+   const contents=await file.text();
+   if(id!==requestId)return; // Clear, example or newer import won the race.
+   load(MyVibeArchive.parseArchive(contents,file.name));
+   $("bluesky-source").hidden=true;$("bluesky-source").textContent="";
+  }catch(err){if(id===requestId){report=null;source=null;render();setError(err);}}
  });
- $("example").addEventListener("click",()=>{load(sample.map((r,i)=>({...r,position:i})));});
+ $("example").addEventListener("click",()=>{requestId++;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";load(sample.map((r,i)=>({...r,position:i})));});
  $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;$("export-status").textContent="";$("archive").value="";$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
  $("filter").addEventListener("change",render);
 })();
