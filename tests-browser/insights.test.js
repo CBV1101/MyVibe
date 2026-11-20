@@ -58,3 +58,36 @@ test("local file import takes precedence over an earlier public lookup",async t=
  assert.equal(await page.locator("#count").textContent(),"1");
  assert.equal(await page.locator("#bluesky-source").isVisible(),false);
 });
+
+test("large local archives show 100 messages at a time with search and filter",async t=>{
+ const page=await setup(t);
+ const rows=Array.from({length:230},(_,i)=>({text:"Entry "+i+" keep going!",date:"2026-01-01"}));
+ await page.locator("#archive").setInputFiles({name:"large.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(rows))});
+ await page.waitForFunction(()=>document.querySelector("#count").textContent==="230");
+ assert.equal(await page.locator(".entry").count(),100);
+ assert.match(await page.locator("#timeline-status").textContent(),/100 of 230/);
+ await page.locator("#show-more").click();
+ assert.equal(await page.locator(".entry").count(),200);
+ await page.locator("#search").fill("Entry 229");
+ assert.equal(await page.locator(".entry").count(),1);
+ assert.equal(await page.locator("#show-more").isVisible(),false);
+ await page.locator("#search").fill("");
+ await page.locator("#filter").selectOption("neutral");
+ assert.equal(await page.locator(".entry").count(),0);
+});
+test("exports exclude message bodies unless explicitly selected",async t=>{
+ const page=await setup(t);
+ await page.locator("#archive").setInputFiles({name:"private.json",mimeType:"application/json",buffer:Buffer.from('["SECRET DRAFT 999"]')});
+ await page.waitForFunction(()=>document.querySelector("#count").textContent==="1");
+ const read=async(selector)=>page.evaluate(selector=>{
+  const report=MyVibeArchive.analyzeArchive([{text:"SECRET DRAFT 999",date:null,position:0}],MyVibeTone,MyVibeHistory);
+  return selector==="json"?MyVibeTrace.exportDocument(report,null,{includeText:document.querySelector("#include-text").checked}):MyVibeTrace.reportCsv(report,{includeText:document.querySelector("#include-text").checked});
+ },selector);
+ assert.equal(JSON.stringify(await read("json")).includes("SECRET DRAFT 999"),false);
+ assert.equal((await read("csv")).includes("SECRET DRAFT 999"),false);
+ await page.locator("#include-text").check();
+ assert.equal(JSON.stringify(await read("json")).includes("SECRET DRAFT 999"),true);
+ assert.equal((await read("csv")).includes("SECRET DRAFT 999"),true);
+ await page.locator("#reset").click();
+ assert.equal(await page.locator("#include-text").isChecked(),false);
+});

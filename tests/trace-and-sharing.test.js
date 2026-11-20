@@ -21,7 +21,10 @@ test("exports include timeline provenance without elevating trust",()=>{
 });
 test("CSV exports escape quotes/newlines and dangerous spreadsheet formulas",()=>{
  const altered={timeline:[{...report.timeline[0],text:'=SUM(A1,A2),"\\nHello'}]};
- const csv=reportCsv(altered);
+ const csv=reportCsv(altered,{includeText:true});
+ const redacted=reportCsv(altered);
+ assert.ok(!redacted.includes("=SUM(A1"));
+ assert.ok(!redacted.split("\\r\\n")[0].split(",").includes("message"));
  assert.ok(csv.includes("'=SUM(A1"));
  assert.ok(csv.includes('""'));
 });

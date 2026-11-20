@@ -1,7 +1,7 @@
 (() => {
  "use strict";
  const $=id=>document.getElementById(id);
- let report=null,requestId=0,source=null;
+ let report=null,requestId=0,source=null,visibleCount=100;
  const sample=[
   {text:"I disagree with that decision because the evidence suggests another approach.",date:"2026-09-01"},
   {text:"Congratulations! You deserve this!",date:"2026-09-04"},
@@ -21,9 +21,12 @@
   $("overview").textContent=report.negative+" messages had negative scoring signals, "+report.positive+" had positive signals and "+report.neutral+" were neutral. All numbers describe this imported sample, not your verified public score.";
   $("categories").replaceChildren();
   for(const c of report.categories.slice(0,10)){const tag=document.createElement("span");tag.className="tag";tag.textContent=c.id.replace(/-/g," ")+": "+c.count;$("categories").append(tag);}
-  const selected=$("filter").value;
+  const selected=$("filter").value,search=$("search").value.trim().toLocaleLowerCase();
   $("timeline").replaceChildren();
-  for(const e of report.timeline.filter(e=>selected==="all"||selected==="positive"&&e.score>50||selected==="negative"&&e.score<50||selected==="neutral"&&e.score===50).slice(-500).reverse()){
+  const matches=report.timeline.filter(e=>(selected==="all"||selected==="positive"&&e.score>50||selected==="negative"&&e.score<50||selected==="neutral"&&e.score===50)&&(!search||e.text.toLocaleLowerCase().includes(search))).reverse();
+  $("timeline-status").textContent="Showing "+Math.min(visibleCount,matches.length)+" of "+matches.length+" matching messages";
+  $("show-more").hidden=matches.length<=visibleCount;
+  for(const e of matches.slice(0,visibleCount)){
    const node=document.createElement("article");node.className="entry";
    const head=document.createElement("div");head.className="entry-head";
    const label=document.createElement("strong");label.textContent=e.date?new Date(e.date).toLocaleDateString():"Message "+e.index;
@@ -38,10 +41,10 @@
    $("timeline").append(node);
   }
  }
- function load(records,provenance=null){report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;$("export-status").textContent="";setError(null);render();}
+ function load(records,provenance=null){visibleCount=100;$("search").value="";$("filter").value="all";$("include-text").checked=false;report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;$("export-status").textContent="";setError(null);render();}
  function download(content,filename,mime){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}
- $("export-json").addEventListener("click",()=>{if(!report)return;download(JSON.stringify(MyVibeTrace.exportDocument(report,source),null,2),"myvibes-analysis.json","application/json");$("export-status").textContent="Export created locally. It contains the analyzed message text.";});
- $("export-csv").addEventListener("click",()=>{if(!report)return;download(MyVibeTrace.reportCsv(report),"myvibes-analysis.csv","text/csv");$("export-status").textContent="CSV created locally. It contains the analyzed message text.";});
+ $("export-json").addEventListener("click",()=>{if(!report)return;download(JSON.stringify(MyVibeTrace.exportDocument(report,source,{includeText:$("include-text").checked}),null,2),"myvibes-analysis.json","application/json");$("export-status").textContent="Export created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.");});
+ $("export-csv").addEventListener("click",()=>{if(!report)return;download(MyVibeTrace.reportCsv(report,{includeText:$("include-text").checked}),"myvibes-analysis.csv","text/csv");$("export-status").textContent="CSV created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.");});
  $("bluesky-fetch").addEventListener("click",async()=>{
   const id=++requestId,button=$("bluesky-fetch");
   const handle=$("bluesky-handle").value;
@@ -74,6 +77,8 @@
   }catch(err){if(id===requestId){report=null;source=null;render();setError(err);}}
  });
  $("example").addEventListener("click",()=>{requestId++;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";load(sample.map((r,i)=>({...r,position:i})));});
- $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;$("export-status").textContent="";$("archive").value="";$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
- $("filter").addEventListener("change",render);
+ $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;visibleCount=100;$("search").value="";$("include-text").checked=false;$("export-status").textContent="";$("archive").value="";$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
+ $("filter").addEventListener("change",()=>{visibleCount=100;render();});
+ $("search").addEventListener("input",()=>{visibleCount=100;render();});
+ $("show-more").addEventListener("click",()=>{visibleCount+=100;render();});
 })();
