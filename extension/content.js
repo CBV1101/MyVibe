@@ -3,7 +3,9 @@
  if(window.__myVibeInstalled)return;
  window.__myVibeInstalled=true;
  const selectors='textarea,[contenteditable="true"],[role="textbox"]';
- let active=null,review=null,requestSerial=0,savePending=false;
+ let active=null,review=null,requestSerial=0,savePending=false,coachEnabled=false;
+ const site=location.hostname.replace(/^www\./,"").replace(/^twitter\.com$/,"x.com");
+ function allowed(settings){return settings?.enabled!==false&&(!Array.isArray(settings?.disabledSites)||!settings.disabledSites.includes(site));}
  const panel=document.createElement("aside");
  panel.id="myvibe-tone-panel";
  panel.setAttribute("aria-label","MyVibe writing coach");
@@ -19,7 +21,8 @@
   // Only actual editable rich-text roots, not decorative textbox containers.
   return node.isContentEditable;
  }
- function usableEditor(node){return !!node&&document.contains(node)&&isEditor(node)&&node.getClientRects().length>0;}
+ function usableEditor(node){return coachEnabled&&!!node&&document.contains(node)&&isEditor(node)&&node.getClientRects().length>0;}
+ function disableCoach(){coachEnabled=false;active=null;clearReview();panel.style.display="none";el("[data-context-value]").value="";}
  function clearReview(){
   review=null;requestSerial++;
   el("[data-ai-result]").style.display="none";
@@ -55,8 +58,14 @@
   clearReview();draw();return true;
  }
  let debounce;
+ chrome.storage.local.get({myvibeCoachSettings:{enabled:true,disabledSites:[]}},data=>{coachEnabled=allowed(data.myvibeCoachSettings);});
+ chrome.storage.onChanged?.addListener((changes,area)=>{
+  if(area!=="local"||!changes.myvibeCoachSettings)return;
+  const enabled=allowed(changes.myvibeCoachSettings.newValue);
+  if(!enabled)disableCoach();else coachEnabled=true;
+ });
  document.addEventListener("focusin",event=>{
-  if(!isEditor(event.target))return;
+  if(!coachEnabled||!isEditor(event.target))return;
   if(active!==event.target){active=event.target;clearReview();el("[data-context-value]").value="";}
   draw();
  },true);
