@@ -26,7 +26,7 @@
   return node.isContentEditable&&!node.parentElement?.closest('[contenteditable="true"]');
  }
  function usableEditor(node){return coachEnabled&&!sessionPaused&&!!node&&document.contains(node)&&isEditor(node)&&node.getClientRects().length>0;}
- function disableCoach(){coachEnabled=false;active=null;clearReview();panel.style.display="none";el("[data-context-value]").value="";}
+ function disableCoach(){coachEnabled=false;hideCoach();el("[data-context-value]").value="";}
  function clearReview(){
   review=null;requestSerial++;
   el("[data-ai-result]").style.display="none";
@@ -35,17 +35,15 @@
   el("[data-ai]").disabled=false;
  }
  function draw(){
-  if(!usableEditor(active)){active=null;clearReview();panel.style.display="none";return;}
+  if(!usableEditor(active)){hideCoach();return;}
   const text=textOf(active).trim();
-  if(!text){clearReview();panel.style.display="none";return;}
+  if(!text){hideCoach();return;}
   const result=MyVibeTone.analyze(text);
   el("[data-status]").textContent="Draft vibe: "+result.score+"/100 · "+(result.score>50?"Positive":result.score===50?"Neutral":"Consider revising");
   el("[data-flags]").textContent=(result.positives.length?"✓ Positive signals: "+result.positives.map(p=>p.label).join(", ")+"\n\n":"")+(result.flags.length?result.flags.map(f=>"• "+f.label+" ("+f.confidence+" confidence)\n  "+f.interpretation+"\n  Consider: "+f.tip).join("\n\n"):"No attacks detected. Disagreement and ordinary discussion are neutral.");
   el("[data-rewrite]").style.display=result.changed?"block":"none";
-  const rect=active.getBoundingClientRect(),width=Math.min(350,window.innerWidth-16);
-  panel.style.left=Math.max(8,Math.min(window.innerWidth-width-8,rect.left))+"px";
-  panel.style.top=(rect.bottom+260<window.innerHeight?rect.bottom+8:Math.max(8,rect.top-Math.min(380,window.innerHeight*.75)))+"px";
   panel.style.display="block";
+  positionCoach();
  }
  function insertIntoEditor(editor,suggestion){
   if(!usableEditor(editor)||!suggestion)return false;
@@ -62,6 +60,16 @@
   clearReview();draw();return true;
  }
  let debounce;
+ function hideCoach(){clearTimeout(debounce);active=null;clearReview();panel.style.display="none";}
+ function positionCoach(){
+  if(!usableEditor(active)){hideCoach();return;}
+  const rect=active.getBoundingClientRect();
+  if(rect.bottom<=0||rect.top>=window.innerHeight||rect.right<=0||rect.left>=window.innerWidth){panel.style.display="none";return;}
+  const width=Math.min(350,window.innerWidth-16);
+  panel.style.left=Math.max(8,Math.min(window.innerWidth-width-8,rect.left))+"px";
+  const spaceBelow=window.innerHeight-rect.bottom,spaceAbove=rect.top;
+  panel.style.top=(spaceBelow>=Math.min(260,spaceAbove)?Math.min(window.innerHeight-40,rect.bottom+8):Math.max(8,rect.top-Math.min(380,window.innerHeight*.75)))+"px";
+ }
  chrome.storage.local.get({myvibeCoachSettings:{enabled:true,disabledSites:[]}},data=>{coachEnabled=allowed(data.myvibeCoachSettings);});
  chrome.storage.onChanged?.addListener((changes,area)=>{
   if(area!=="local"||!changes.myvibeCoachSettings)return;
@@ -73,6 +81,13 @@
    if(isEditor(focused)){active=focused;clearReview();draw();}
   }
  });
+ window.addEventListener("scroll",()=>{if(active&&panel.style.display!=="none")positionCoach();},{capture:true,passive:true});
+ window.addEventListener("resize",()=>{if(active&&panel.style.display!=="none")positionCoach();},{passive:true});
+ document.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&panel.style.display!=="none"&&(panel.contains(document.activeElement)||document.activeElement===active)){
+   event.stopPropagation();sessionPaused=true;hideCoach();el("[data-context-value]").value="";
+  }
+ },true);
  document.addEventListener("focusin",event=>{
   if(!coachEnabled||sessionPaused||!isEditor(event.target))return;
   if(active!==event.target){active=event.target;clearReview();el("[data-context-value]").value="";}
@@ -87,10 +102,10 @@
  // Social apps often unmount or hide composers without an input event.
  // Invalidate previews and close the coach when the editor leaves the page.
  const observer=new MutationObserver(()=>{
-  if(active&&!usableEditor(active)){active=null;clearReview();panel.style.display="none";}
+  if(active&&!usableEditor(active)){hideCoach();}
  });
  observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","style","class","aria-hidden","inert","contenteditable","readonly","disabled"]});
- el("[data-close]").addEventListener("click",()=>{sessionPaused=true;active=null;clearReview();panel.style.display="none";el("[data-context-value]").value="";});
+ el("[data-close]").addEventListener("click",()=>{sessionPaused=true;hideCoach();el("[data-context-value]").value="";});
  el("[data-rewrite]").addEventListener("click",()=>{
   if(!usableEditor(active))return;
   const {suggestion,changed}=MyVibeTone.analyze(textOf(active));if(changed)insertIntoEditor(active,suggestion);
