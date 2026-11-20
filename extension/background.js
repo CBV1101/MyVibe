@@ -10,7 +10,7 @@ chrome.runtime.onMessage.addListener((message,sender,reply)=>{
  if(!/^https:\/\/(x\.com|twitter\.com|www\.reddit\.com|www\.threads\.net|bsky\.app)\//.test(url)){
   reply({error:"Unsupported source"});return false;
  }
- chrome.storage.local.get({aiEnabled:false,aiToken:""},async ({aiEnabled,aiToken})=>{
+ chrome.storage.local.get({aiEnabled:false,aiToken:"",myvibeCoachSettings:{enabled:true,disabledSites:[]}},async ({aiEnabled,aiToken,myvibeCoachSettings})=>{
   const site=new URL(url).hostname.replace(/^www\./,"").replace(/^twitter\.com$/,"x.com");
   if(!aiEnabled||!aiToken||myvibeCoachSettings?.enabled===false||myvibeCoachSettings?.disabledSites?.includes?.(site)){
    reply({error:"AI is disabled for this site or in extension settings"});return;
