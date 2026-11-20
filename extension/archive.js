@@ -60,11 +60,13 @@
    return {text:item.text.trim(),date,position:item.position};
   }).filter(Boolean);
   if(!normalized.length)throw new Error("No usable messages found");
-  return normalized.sort((a,b)=>{
-   // Date-less entries keep source order and do not reorder dated entries across them.
-   if(!a.date||!b.date)return a.position-b.position;
-   return Date.parse(a.date)-Date.parse(b.date)||a.position-b.position;
-  });
+  // Mixing chronological comparisons with source-order comparisons creates a
+  // non-transitive comparator (A < B < C but C < A), making rolling scores
+  // depend on the JavaScript engine. Preserve source order for partial dates.
+  if(normalized.every(item=>item.date)){
+   normalized.sort((a,b)=>Date.parse(a.date)-Date.parse(b.date)||a.position-b.position);
+  }
+  return normalized;
  }
  function analyzeArchive(records,tone,history){
   if(!Array.isArray(records)||!tone||!history)throw new TypeError("Missing records or scoring engine");
