@@ -13,6 +13,7 @@ function refresh(){
   document.getElementById("badge-container").replaceChildren(MyVibesGauge.createBadge(score));
  });
 }
+document.getElementById("getting-started").addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("welcome.html")}));
 document.getElementById("data-controls").addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("data.html")}));
 document.getElementById("ai-settings").addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("ai-settings.html")}));
 document.getElementById("insights").addEventListener("click",()=>chrome.runtime.openOptionsPage());
