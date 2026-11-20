@@ -102,9 +102,14 @@
   if(!active)return;
   const result=MyVibeTone.analyze(textOf(active));
   if(result.score===null)return;
+  const editor=active,originalText=textOf(editor);
   chrome.storage.local.get({myvibeHistory:[]},({myvibeHistory})=>{
+   // Saving is an explicit action for this exact draft, not a later editor state.
+   // Do not let a delayed storage read record text after the user edits or closes it.
+   if(active!==editor||!document.contains(editor)||textOf(editor)!==originalText)return;
    const entry=MyVibeEvidence.createDraftSample({result,platform:location.hostname});
-   chrome.storage.local.set({myvibeHistory:[...myvibeHistory,entry].slice(-500)});
+   const history=Array.isArray(myvibeHistory)?myvibeHistory:[];
+   chrome.storage.local.set({myvibeHistory:[...history,entry].slice(-500)});
    el("[data-record]").textContent="Added ✓";
    setTimeout(()=>el("[data-record]").textContent="Add to my vibe history",1200);
   });

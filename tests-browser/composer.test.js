@@ -113,3 +113,30 @@ test("switching to a new editor invalidates previous AI rewrite",async t=>{
  assert.equal(await page.locator("[data-ai-preview]").isVisible(),false);
  assert.equal(await page.locator("#other").textContent(),"Another editor");
 });
+
+
+test("delayed opt-in save is cancelled if draft changes or coach closes",async t=>{
+ const page=await setup(t);
+ await draft(page,"Congratulations on your achievement!");
+ await page.evaluate(()=>{
+  window.__pendingSaveReads=[];
+  chrome.storage.local.get=(defaults,callback)=>window.__pendingSaveReads.push(()=>callback({...defaults,...window.__myvibeData}));
+ });
+ await page.locator("[data-record]").click();
+ assert.equal(await page.evaluate(()=>window.__pendingSaveReads.length),1);
+ await draft(page,"You are an idiot.");
+ await page.evaluate(()=>window.__pendingSaveReads.shift()());
+ assert.equal((await page.evaluate(()=>window.__myvibeData.myvibeHistory)).length,0);
+ await page.locator("[data-record]").click();
+ await page.locator("[data-close]").click();
+ await page.evaluate(()=>window.__pendingSaveReads.shift()());
+ assert.equal((await page.evaluate(()=>window.__myvibeData.myvibeHistory)).length,0);
+});
+test("malformed local history does not crash an explicit draft save",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thanks for helping!");
+ await page.evaluate(()=>window.__myvibeData.myvibeHistory={corrupt:true});
+ await page.locator("[data-record]").click();
+ await page.waitForFunction(()=>Array.isArray(window.__myvibeData.myvibeHistory));
+ assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),1);
+});
