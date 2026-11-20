@@ -232,3 +232,35 @@ test("platform opt-out disables only matching social platform",async t=>{
  await page.locator("#draft").focus();
  await page.locator("#myvibe-tone-panel").waitFor({state:"visible"});
 });
+
+test("all supported platform fixtures can coach editable composers without network AI",async t=>{
+ for(const site of ["bsky.app","x.com","twitter.com","www.reddit.com","www.threads.net"]){
+  const page=await setup(t,site);
+  await draft(page,"I disagree with your argument.");
+  assert.match(await page.locator("[data-status]").textContent(),/50\/100/);
+  assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
+ }
+});
+test("opt-out persists through typing and never records drafts",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you!");
+ await page.evaluate(()=>chrome.storage.local.set({myvibeCoachSettings:{enabled:false,disabledSites:[]}}));
+ await page.waitForFunction(()=>document.querySelector("#myvibe-tone-panel").style.display==="none");
+ await page.locator("#draft").fill("You are an idiot.");
+ await page.waitForTimeout(350);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+ assert.equal(await page.evaluate(()=>window.__myvibeCalls.length),0);
+ assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),0);
+});
+test("navigation and search text fields do not trigger coaching",async t=>{
+ const page=await setup(t);
+ await page.evaluate(()=>{
+  const header=document.createElement("header");
+  header.innerHTML='<div role="search"><textarea id="searchbox"></textarea></div><nav><div id="navbox" contenteditable="true"></div></nav>';
+  document.body.append(header);
+ });
+ await page.locator("#searchbox").fill("Find people");
+ await page.locator("#navbox").fill("Navigation");
+ await page.waitForTimeout(350);
+ assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
+});
