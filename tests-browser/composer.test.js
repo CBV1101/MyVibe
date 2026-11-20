@@ -140,3 +140,34 @@ test("malformed local history does not crash an explicit draft save",async t=>{
  await page.waitForFunction(()=>Array.isArray(window.__myvibeData.myvibeHistory));
  assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),1);
 });
+
+test("rapid save clicks cannot overwrite one another while storage is pending",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you for your help!");
+ await page.evaluate(()=>{
+  window.__saveWrites=[];
+  chrome.storage.local.set=(values,callback)=>window.__saveWrites.push(()=>{Object.assign(window.__myvibeData,values);callback?.();});
+ });
+ await page.locator("[data-record]").click();
+ assert.equal(await page.locator("[data-record]").isDisabled(),true);
+ assert.equal(await page.evaluate(()=>window.__saveWrites.length),1);
+ await page.locator("#draft").fill("Congratulations!");
+ await page.evaluate(()=>window.__saveWrites.shift()());
+ assert.equal(await page.locator("[data-record]").isDisabled(),false);
+ assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),1);
+ await page.locator("[data-record]").click();
+ assert.equal(await page.evaluate(()=>window.__saveWrites.length),1);
+ await page.evaluate(()=>window.__saveWrites.shift()());
+ assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),2);
+});
+test("failed storage write reports failure and allows retry",async t=>{
+ const page=await setup(t);
+ await draft(page,"Thank you!");
+ await page.evaluate(()=>{
+  chrome.storage.local.set=(_values,callback)=>{chrome.runtime.lastError={message:"Disk unavailable"};callback();chrome.runtime.lastError=null;};
+ });
+ await page.locator("[data-record]").click();
+ await page.waitForFunction(()=>document.querySelector("[data-record]").textContent.includes("Save failed"));
+ assert.equal(await page.locator("[data-record]").isDisabled(),false);
+ assert.equal(await page.evaluate(()=>window.__myvibeData.myvibeHistory.length),0);
+});
