@@ -13,7 +13,7 @@
  const fmt=n=>n>0?"+"+n.toFixed(2):n.toFixed(2);
  function setError(error){$("error").hidden=!error;$("error").textContent=error?String(error.message||error):"";}
  function render(){
-  $("results").hidden=!report;$("insights-export").hidden=!report;if(!report)return;
+  $("results").hidden=!report;$("insights-export").hidden=!report;if(!report){$("timeline").replaceChildren();$("timeline-status").textContent="";$("show-more").hidden=true;return;}
   $("score").textContent=report.score.toFixed(1);
   $("count").textContent=report.count;
   $("positive").textContent=report.positive;
@@ -67,17 +67,17 @@
  });
  $("archive").addEventListener("change",async(e)=>{
   const file=e.target.files?.[0];if(!file)return;
-  const id=++requestId;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";
+  const id=++requestId;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";setError(null);
   try{
    if(file.size>8*1024*1024)throw new Error("Maximum file size is 8 MB");
    const contents=await file.text();
    if(id!==requestId)return; // Clear, example or newer import won the race.
    load(MyVibeArchive.parseArchive(contents,file.name));
    $("bluesky-source").hidden=true;$("bluesky-source").textContent="";
-  }catch(err){if(id===requestId){report=null;source=null;render();setError(err);}}
+  }catch(err){if(id===requestId){setError(err);$("archive").value="";}}
  });
  $("example").addEventListener("click",()=>{requestId++;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";load(sample.map((r,i)=>({...r,position:i})));});
- $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;visibleCount=100;$("search").value="";$("include-text").checked=false;$("export-status").textContent="";$("archive").value="";$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
+ $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;visibleCount=100;$("search").value="";$("include-text").checked=false;$("export-status").textContent="";$("archive").value="";$("filter").value="all";$("timeline-status").textContent="";$("timeline").replaceChildren();$("show-more").hidden=true;$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
  $("filter").addEventListener("change",()=>{visibleCount=100;render();});
  $("search").addEventListener("input",()=>{visibleCount=100;render();});
  $("show-more").addEventListener("click",()=>{visibleCount+=100;render();});
