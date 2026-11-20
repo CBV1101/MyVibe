@@ -64,7 +64,11 @@
  chrome.storage.onChanged?.addListener((changes,area)=>{
   if(area!=="local"||!changes.myvibeCoachSettings)return;
   const enabled=allowed(changes.myvibeCoachSettings.newValue);
-  if(!enabled)disableCoach();else coachEnabled=true;
+  if(!enabled)disableCoach();else{
+   coachEnabled=true;
+   const focused=document.activeElement;
+   if(isEditor(focused)){active=focused;clearReview();draw();}
+  }
  });
  document.addEventListener("focusin",event=>{
   if(!coachEnabled||!isEditor(event.target))return;
