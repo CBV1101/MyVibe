@@ -7,7 +7,7 @@ const path=require("node:path");
 const script=fs.readFileSync(path.join(__dirname,"../extension/background.js"),"utf8");
 function setup({enabled=true,responseBody='{"score":50}',status=200}={}){
  let listener,fetches=0;
- const chrome={runtime:{id:"myvibe-test",onMessage:{addListener:fn=>listener=fn}},storage:{local:{get:(_defaults,cb)=>cb({aiEnabled:enabled,aiToken:"test-token"})}}};
+ const chrome={runtime:{id:"myvibe-test",onMessage:{addListener:fn=>listener=fn}},storage:{local:{get:(_defaults,cb)=>cb({aiEnabled:enabled,aiToken:"test-token",myvibeCoachSettings:{enabled:true,disabledSites:[]}})},onChanged:{addListener:()=>{},removeListener:()=>{}}}};
  const ctx={chrome,AbortController,setTimeout,clearTimeout,fetch:async()=>{fetches++;return {ok:status===200,status,text:async()=>responseBody}}};
  vm.runInNewContext(script,ctx);
  const sender={id:"myvibe-test",frameId:0,url:"https://bsky.app/"};
@@ -23,7 +23,7 @@ test("AI relay rejects other extension IDs, subframes and unsupported sites",asy
 });
 test("AI relay remains explicit, bounded and disabled by default",async()=>{
  const a=setup({enabled:false});
- assert.match((await a.send({type:"MYVIBE_AI_ANALYZE",text:"hello"})).error,/Enable/);
+ assert.match((await a.send({type:"MYVIBE_AI_ANALYZE",text:"hello"})).error,/disabled/);
  assert.equal(a.fetches,0);
  const b=setup();
  assert.match((await b.send({type:"MYVIBE_AI_ANALYZE",text:"x".repeat(3001)})).error,/too long/);
