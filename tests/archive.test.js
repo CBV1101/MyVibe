@@ -30,3 +30,26 @@ test("archive changes are explained and neutral entries remain neutral",()=>{
  assert.equal(r.timeline[1].score,50);
  assert.ok(r.timeline[2].reasons.some(x=>x.type==="negative"));
 });
+
+test("CSV parser rejects malformed and ambiguous rows rather than silently corrupting text",()=>{
+ for(const input of [
+  'text,date\n"valid"x,2026-01-01',
+  'text,date\nhello"friend,2026-01-01',
+  'text,date\n"unfinished,2026-01-01',
+  'text,date\nhello,2026-01-01,extra',
+  'text,date\nhello',
+  'text,text\nhello,world'
+ ])assert.throws(()=>parseArchive(input,"archive.csv"),input);
+});
+test("CSV correctly preserves escaped quotes, line breaks and UTF-8 BOM",()=>{
+ const rows=parseArchive('\uFEFFtext,date\n"He said ""hello"", then left",2026-01-01\n"Line one\nLine two",2026-01-02',"archive.csv");
+ assert.equal(rows[0].text,'He said "hello", then left');
+ assert.equal(rows[1].text,"Line one\nLine two");
+});
+test("CSV rejects oversized row counts early",()=>{
+ const csv="text\n"+"message\n".repeat(5001);
+ assert.throws(()=>parseArchive(csv,"archive.csv"),/5,000/);
+});
+test("import does not accept a scalar JSON document",()=>{
+ for(const value of ["null","42","true",'"a string"'])assert.throws(()=>parseArchive(value,"archive.json"));
+});
