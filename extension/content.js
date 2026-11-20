@@ -17,6 +17,8 @@
  function isEditor(node){
   if(!node||panel.contains(node)||!node.matches?.(selectors))return false;
   if(node.closest('[aria-hidden="true"],[inert]')||node.disabled||node.readOnly||node.getAttribute("aria-readonly")==="true")return false;
+  if(node.closest('[role="search"],[role="navigation"],header,nav'))return false;
+  if(node.matches("textarea")&&node.type==="search")return false;
   if(node.matches("textarea"))return true;
   // Only actual editable rich-text roots, not decorative textbox containers.
   return node.isContentEditable;
@@ -33,7 +35,7 @@
  function draw(){
   if(!usableEditor(active)){active=null;clearReview();panel.style.display="none";return;}
   const text=textOf(active).trim();
-  if(!text){panel.style.display="none";return;}
+  if(!text){clearReview();panel.style.display="none";return;}
   const result=MyVibeTone.analyze(text);
   el("[data-status]").textContent="Draft vibe: "+result.score+"/100 · "+(result.score>50?"Positive":result.score===50?"Neutral":"Consider revising");
   el("[data-flags]").textContent=(result.positives.length?"✓ Positive signals: "+result.positives.map(p=>p.label).join(", ")+"\n\n":"")+(result.flags.length?result.flags.map(f=>"• "+f.label+" ("+f.confidence+" confidence)\n  "+f.interpretation+"\n  Consider: "+f.tip).join("\n\n"):"No attacks detected. Disagreement and ordinary discussion are neutral.");
@@ -70,7 +72,7 @@
   draw();
  },true);
  document.addEventListener("input",event=>{
-  if(!isEditor(event.target))return;
+  if(!coachEnabled||!isEditor(event.target))return;
   if(active!==event.target){active=event.target;el("[data-context-value]").value="";}
   clearReview();clearTimeout(debounce);debounce=setTimeout(draw,220);
  },true);
