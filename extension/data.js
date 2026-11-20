@@ -29,6 +29,21 @@
   setTimeout(()=>URL.revokeObjectURL(url),3000);
   $("export-status").textContent="Export prepared without local companion token.";
  });
+ $("import").addEventListener("click",async()=>{
+  const file=$("import-file").files?.[0],status=$("import-status"),button=$("import");
+  if(!file){status.textContent="Choose a MyVibes backup first.";return;}
+  if(file.size>MyVibeBackup.MAX_BYTES){status.textContent="Backup exceeds the 1 MB limit.";return;}
+  button.disabled=true;status.textContent="Validating private backup…";
+  try{
+   const incoming=MyVibeBackup.parseBackup(await file.text(),MyVibeEvidence);
+   // Read just before writing so another page's latest samples are preserved.
+   const current=await read(),merged=MyVibeBackup.mergeHistory(current.myvibeHistory,incoming,MyVibeEvidence);
+   await new Promise((resolve,reject)=>chrome.storage.local.set({myvibeHistory:merged},()=>chrome.runtime.lastError?reject(new Error("Could not save backup. Please retry.")):resolve()));
+   status.textContent="Restored "+incoming.length+" recognized private samples. "+merged.length+" unique samples retained. AI settings and sharing preferences unchanged.";
+   refresh();
+  }catch(error){status.textContent="Restore not completed: "+error.message;}
+  finally{button.disabled=false;$("import-file").value="";}
+ });
  $("delete").addEventListener("click",()=>{
   if(!confirm("Delete all locally saved MyVibes history and AI settings from this browser?"))return;
   chrome.storage.local.remove(["myvibeHistory","aiEnabled","aiToken","sharingPreference","myvibeCoachSettings"],()=>{
