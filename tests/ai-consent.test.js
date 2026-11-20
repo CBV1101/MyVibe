@@ -29,6 +29,7 @@ test("AI is blocked when globally disabled or excluded on this site",async()=>{
 });
 test("changing AI consent during request prevents returning its result",async()=>{
  const h=harness(),response=h.send();
+ await Promise.resolve();
  assert.equal(h.fetchCalls,1);
  h.change({aiEnabled:{newValue:false}});
  h.respond();
@@ -37,6 +38,7 @@ test("changing AI consent during request prevents returning its result",async()=
 });
 test("successful AI request removes consent listener",async()=>{
  const h=harness(),response=h.send();
+ await Promise.resolve();
  h.respond();
  assert.equal((await response).result.score,50);
  assert.equal(h.listeners,0);
