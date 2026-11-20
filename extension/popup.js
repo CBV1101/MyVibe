@@ -20,3 +20,32 @@ document.getElementById("clear").addEventListener("click",()=>{
  if(confirm("Delete your locally saved vibe history?"))chrome.storage.local.remove("myvibeHistory",refresh);
 });
 refresh();
+
+const siteKey="myvibeCoachSettings";
+const defaults={enabled:true,disabledSites:[]};
+function normalized(value){
+ return {enabled:value?.enabled!==false,disabledSites:Array.isArray(value?.disabledSites)?value.disabledSites.filter(x=>["x.com","reddit.com","threads.net","bsky.app"].includes(x)):[]};
+}
+function showControls(value){
+ const settings=normalized(value),site=document.getElementById("site-choice").value;
+ document.getElementById("coach-enabled").checked=settings.enabled;
+ document.getElementById("site-enabled").disabled=!site;
+ document.getElementById("site-enabled").checked=!settings.disabledSites.includes(site);
+}
+function saveControl(update){
+ chrome.storage.local.get({[siteKey]:defaults},data=>{
+  const next=update(normalized(data[siteKey]));
+  chrome.storage.local.set({[siteKey]:next},()=>{
+   document.getElementById("coach-status").textContent=chrome.runtime.lastError?"Could not save settings. Try again.":"Settings saved locally.";
+   if(!chrome.runtime.lastError)showControls(next);
+  });
+ });
+}
+document.getElementById("coach-enabled").addEventListener("change",event=>saveControl(s=>({...s,enabled:event.target.checked})));
+document.getElementById("site-choice").addEventListener("change",()=>chrome.storage.local.get({[siteKey]:defaults},data=>showControls(data[siteKey])));
+document.getElementById("site-enabled").addEventListener("change",event=>{
+ const site=document.getElementById("site-choice").value;
+ if(!site)return;
+ saveControl(s=>({...s,disabledSites:event.target.checked?s.disabledSites.filter(x=>x!==site):[...new Set([...s.disabledSites,site])]}));
+});
+chrome.storage.local.get({[siteKey]:defaults},data=>showControls(data[siteKey]));
