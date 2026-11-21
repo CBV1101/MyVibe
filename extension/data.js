@@ -22,7 +22,7 @@
  $("export").addEventListener("click",async ()=>{
   const data=await read();
   // Exclude secrets. A local companion access token is never exported.
-  const output={format:"myvibes-private-export-v1",exportedAt:new Date().toISOString(),warning:"Private draft samples are NOT verified published messages",history:Array.isArray(data.myvibeHistory)?data.myvibeHistory:[],aiEnabled:Boolean(data.aiEnabled),sharingPreference:MyVibeSharing.normalize(data.sharingPreference)};
+  const output={format:"myvibes-private-export-v1",exportedAt:new Date().toISOString(),warning:"Private draft samples are NOT verified published messages",history:MyVibeBackup.cleanHistory((Array.isArray(data.myvibeHistory)?data.myvibeHistory:[]).filter(MyVibeEvidence.isLocalSample),MyVibeEvidence),aiEnabled:Boolean(data.aiEnabled),sharingPreference:MyVibeSharing.normalize(data.sharingPreference)};
   const blob=new Blob([JSON.stringify(output,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);
   const link=document.createElement("a");link.href=url;link.download="myvibes-private-data.json";link.click();
