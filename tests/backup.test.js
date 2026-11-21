@@ -27,3 +27,10 @@ test("enforces import size, sample count and bounded signals",()=>{
 test("does not trust unrecognized existing records when merging",()=>{
  assert.deepEqual(B.mergeHistory([{...sample,verified:true}],[sample],E),[sample]);
 });
+
+test("export sanitation excludes legacy and forged records",()=>{
+ const history=[sample,{...sample,verified:true},{schemaVersion:2,text:"old raw text"}];
+ const clean=B.cleanHistory(history.filter(E.isLocalSample),E);
+ assert.deepEqual(clean,[sample]);
+ assert.deepEqual(B.parseBackup(pack(clean),E),[sample]);
+});
