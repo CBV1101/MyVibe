@@ -13,7 +13,7 @@
   });
  }
  function parseBackup(text,evidence){
-  if(typeof text!=="string"||text.length>MAX_BYTES)throw new Error("Backup file is too large.");
+  if(typeof text!=="string"||new TextEncoder().encode(text).byteLength>MAX_BYTES)throw new Error("Backup file is too large.");
   let data;try{data=JSON.parse(text);}catch{throw new Error("Backup is not valid JSON.");}
   if(!data||data.format!==FORMAT)throw new Error("Unsupported MyVibes backup format.");
   return cleanHistory(data.history,evidence);
@@ -22,7 +22,7 @@
   const old=cleanHistory(Array.isArray(existing)?existing.filter(x=>evidence.isLocalSample(x)):[],evidence);
   const seen=new Set(),combined=[];
   for(const record of [...old,...incoming]){
-   const key=JSON.stringify(record);
+   const key=JSON.stringify([record.schemaVersion,record.modelVersion,record.at,record.platform,record.score,record.flags,record.positiveSignals]);
    if(!seen.has(key)){seen.add(key);combined.push(record);}
   }
   return combined.sort((a,b)=>a.at-b.at).slice(-MAX_SAMPLES);
