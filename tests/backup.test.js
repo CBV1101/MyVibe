@@ -36,7 +36,7 @@ test("export sanitation excludes legacy and forged records",()=>{
 });
 
 test("UTF-8 import limit counts actual bytes, not JavaScript characters",()=>{
- const payload=pack([{...sample,flags:["é".repeat(90)]}]);
+ const payload=pack([{...sample,flags:["é".repeat(101)]}]);
  assert.throws(()=>B.parseBackup(payload,E),/signals/);
  const padded=JSON.stringify({format:B.FORMAT,history:[],padding:"é".repeat(530000)});
  assert.ok(padded.length<B.MAX_BYTES);
