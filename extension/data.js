@@ -22,12 +22,30 @@
  $("export").addEventListener("click",async ()=>{
   const data=await read();
   // Exclude secrets. A local companion access token is never exported.
-  const output={format:"myvibes-private-export-v1",exportedAt:new Date().toISOString(),warning:"Private draft samples are NOT verified published messages",history:Array.isArray(data.myvibeHistory)?data.myvibeHistory:[],aiEnabled:Boolean(data.aiEnabled),sharingPreference:MyVibeSharing.normalize(data.sharingPreference)};
-  const blob=new Blob([JSON.stringify(output,null,2)],{type:"application/json"});
+  const valid=(Array.isArray(data.myvibeHistory)?data.myvibeHistory:[]).filter(MyVibeEvidence.isLocalSample).slice(-MyVibeBackup.MAX_SAMPLES);
+  const output={format:MyVibeBackup.FORMAT,exportedAt:new Date().toISOString(),warning:"Private draft samples are NOT verified published messages",history:MyVibeBackup.cleanHistory(valid,MyVibeEvidence)};
+  const serialized=JSON.stringify(output,null,2);
+  if(new TextEncoder().encode(serialized).byteLength>MyVibeBackup.MAX_BYTES){$("export-status").textContent="Export exceeds 1 MB; no file created. Reduce saved history before exporting.";return;}
+  const blob=new Blob([serialized],{type:"application/json"});
   const url=URL.createObjectURL(blob);
   const link=document.createElement("a");link.href=url;link.download="myvibes-private-data.json";link.click();
   setTimeout(()=>URL.revokeObjectURL(url),3000);
   $("export-status").textContent="Export prepared without local companion token.";
+ });
+ $("import").addEventListener("click",async()=>{
+  const file=$("import-file").files?.[0],status=$("import-status"),button=$("import");
+  if(!file){status.textContent="Choose a MyVibes backup first.";return;}
+  if(file.size>MyVibeBackup.MAX_BYTES){status.textContent="Backup exceeds the 1 MB limit.";return;}
+  button.disabled=true;status.textContent="Validating private backup…";
+  try{
+   const incoming=MyVibeBackup.parseBackup(await file.text(),MyVibeEvidence);
+   // Read just before writing so another page's latest samples are preserved.
+   const current=await read(),merged=MyVibeBackup.mergeHistory(current.myvibeHistory,incoming,MyVibeEvidence);
+   await new Promise((resolve,reject)=>chrome.storage.local.set({myvibeHistory:merged},()=>chrome.runtime.lastError?reject(new Error("Could not save backup. Please retry.")):resolve()));
+   status.textContent="Restored "+incoming.length+" recognized private samples. "+merged.length+" unique samples retained. AI settings and sharing preferences unchanged.";
+   refresh();
+  }catch(error){status.textContent="Restore not completed: "+error.message;}
+  finally{button.disabled=false;$("import-file").value="";}
  });
  $("delete").addEventListener("click",()=>{
   if(!confirm("Delete all locally saved MyVibes history and AI settings from this browser?"))return;
