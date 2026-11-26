@@ -12,8 +12,24 @@
  ];
  const fmt=n=>n>0?"+"+n.toFixed(2):n.toFixed(2);
  function setError(error){$("error").hidden=!error;$("error").textContent=error?String(error.message||error):"";}
+ function renderTrends(){
+  $("trend-rows").replaceChildren();$("impact").replaceChildren();$("trend-status").textContent="";
+  if(!report)return;
+  const t=MyVibeTrends.summarize(report.timeline,$("period").value);
+  $("trend-status").textContent=t.periods.length+" dated periods; "+t.undated+" messages without usable dates.";
+  for(const p of t.periods){
+   const tr=document.createElement("tr");
+   for(const v of [p.period,p.average.toFixed(1),p.count,p.positive,p.neutral,p.negative]){
+    const td=document.createElement("td");td.textContent=v;tr.append(td);
+   }
+   $("trend-rows").append(tr);
+  }
+  for(const e of t.strongest){
+   const li=document.createElement("li");li.textContent="Message "+e.index+": "+fmt(e.delta)+" rolling points (message score "+e.score+"/100)";$("impact").append(li);
+  }
+ }
  function render(){
-  $("results").hidden=!report;$("insights-export").hidden=!report;if(!report){$("timeline").replaceChildren();$("timeline-status").textContent="";$("show-more").hidden=true;return;}
+  renderTrends();$("results").hidden=!report;$("insights-export").hidden=!report;if(!report){$("timeline").replaceChildren();$("timeline-status").textContent="";$("show-more").hidden=true;return;}
   $("score").textContent=report.score.toFixed(1);
   $("count").textContent=report.count;
   $("positive").textContent=report.positive;
@@ -29,7 +45,7 @@
   for(const e of matches.slice(0,visibleCount)){
    const node=document.createElement("article");node.className="entry";
    const head=document.createElement("div");head.className="entry-head";
-   const label=document.createElement("strong");label.textContent=e.date?new Date(e.date).toLocaleDateString():"Message "+e.index;
+   const label=document.createElement("strong");label.textContent="Message "+e.index+(e.date?" · "+new Date(e.date).toLocaleDateString():"");
    const delta=document.createElement("span");delta.className="delta "+(e.delta>0?"positive":e.delta<0?"negative":"");delta.textContent=fmt(e.delta)+" points";
    head.append(label,delta);
    const text=document.createElement("p");text.className="message";text.textContent=e.text;
@@ -78,6 +94,7 @@
  });
  $("example").addEventListener("click",()=>{requestId++;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";load(sample.map((r,i)=>({...r,position:i})));});
  $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;visibleCount=100;$("search").value="";$("include-text").checked=false;$("export-status").textContent="";$("archive").value="";$("filter").value="all";$("timeline-status").textContent="";$("timeline").replaceChildren();$("show-more").hidden=true;$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
+ $("period").addEventListener("change",renderTrends);
  $("filter").addEventListener("change",()=>{visibleCount=100;render();});
  $("search").addEventListener("input",()=>{visibleCount=100;render();});
  $("show-more").addEventListener("click",()=>{visibleCount+=100;render();});
