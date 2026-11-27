@@ -27,7 +27,7 @@ $("profile-form").addEventListener("submit",async event=>{
   $("profile-breakdown").textContent=report.positive+" positive · "+report.neutral+" neutral · "+report.negative+" negative";
   $("gauge-container").replaceChildren(MyVibesGauge.createGauge(report.score));
   $("badge-container").replaceChildren(MyVibesGauge.createBadge(report.score));
-  $("profile-status").textContent="@"+result.profile.handle+" · Private estimate · Ownership not verified · Limited feed";
+  $("profile-status").textContent="@"+result.profile.handle+" · Private estimate · Ownership not verified · Limited feed"+(result.coverage?" · "+result.coverage.duplicates+" duplicates excluded · "+result.coverage.excluded+" other entries excluded · "+result.coverage.stopReason.replace(/_/g," "):"");
   for(const key of ["profile-score","profile-badge","profile-stats","profile-breakdown"])$(key).hidden=false;
   $("empty").hidden=true;
  }catch(error){if(id===lookup)$("profile-status").textContent=error.message||"Lookup failed.";}
