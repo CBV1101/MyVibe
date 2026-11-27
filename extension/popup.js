@@ -4,8 +4,10 @@ function refresh(){
   document.querySelector(".privacy:not([aria-label]) small").textContent=MyVibeSharing.description(sharingPreference);
  });
 }
-let lookup=0;
+let lookup=0,account=null,challenge=null,proofEpoch=0;
+function resetProof(){proofEpoch++;challenge=null;account=null;$("proof-start").disabled=true;$("proof-panel").hidden=true;$("proof-token").value="";$("proof-status").textContent="";$("proof-check").disabled=false;}
 function hideProfile(){
+ resetProof();
  for(const id of ["profile-score","profile-badge","profile-stats","profile-breakdown"])$(id).hidden=true;
  $("gauge-container").replaceChildren();$("badge-container").replaceChildren();
  $("empty").hidden=false;
@@ -20,6 +22,7 @@ $("profile-form").addEventListener("submit",async event=>{
   if(id!==lookup)return;
   const report=MyVibeArchive.analyzeArchive(result.posts,MyVibeTone,MyVibeHistory);
   if(!report.count)throw new Error("No usable public posts found.");
+ if(MyVibeBluesky.isDid(result.profile.did)){account=result.profile;$("proof-start").disabled=false;}
   $("score").textContent=report.score.toFixed(1);
   $("score-label").textContent=MyVibesGauge.label(report.score);
   $("count").textContent=report.count;
@@ -70,3 +73,28 @@ document.getElementById("site-enabled").addEventListener("change",event=>{
  saveControl(s=>({...s,disabledSites:event.target.checked?s.disabledSites.filter(x=>x!==site):[...new Set([...s.disabledSites,site])]}));
 });
 chrome.storage.local.get({[siteKey]:defaults},data=>showControls(data[siteKey]));
+
+$("proof-start").addEventListener("click",()=>{
+ if(!account)return;
+ proofEpoch++;challenge=MyVibeAccountProof.createChallenge(account.did);
+ $("proof-token").value=challenge.token;$("proof-panel").hidden=false;
+ $("proof-check").disabled=false;$("proof-status").textContent="Code expires in 15 minutes. Keep this popup open.";
+});
+$("proof-cancel").addEventListener("click",()=>{
+ proofEpoch++;challenge=null;$("proof-panel").hidden=true;$("proof-token").value="";
+ $("proof-check").disabled=false;$("proof-status").textContent="Local verification cleared.";
+});
+$("proof-check").addEventListener("click",async()=>{
+ if(!account||!challenge)return;
+ const epoch=++proofEpoch,c=challenge,handle=account.handle;
+ $("proof-check").disabled=true;
+ try{
+  if(Date.now()>=c.expiresAt)throw new Error("Code expired. Generate a new one.");
+  const feed=await MyVibeBluesky.fetchPublicPosts(handle);
+  if(epoch!==proofEpoch)return;
+  const proof=feed.profile.did===c.did&&MyVibeAccountProof.checkChallenge(c,feed.posts);
+  if(!proof)throw new Error("Matching post not found or code expired. Check again or generate a new code.");
+  challenge=null;$("proof-token").value="";$("proof-check").disabled=true;
+  $("proof-status").textContent="Local account control observed. Not a verified login or public reputation score. You may delete the verification post.";
+ }catch(error){if(epoch===proofEpoch){$("proof-status").textContent=error.message;$("proof-check").disabled=false;}}
+});
