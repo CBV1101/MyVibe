@@ -3,14 +3,14 @@
  if(window.__myVibeInstalled)return;
  window.__myVibeInstalled=true;
  const selectors='textarea,[contenteditable="true"],[role="textbox"]';
- let active=null,review=null,requestSerial=0,savePending=false,coachEnabled=false,sessionPaused=false;
+ let active=null,review=null,requestSerial=0,coachEnabled=false,dismissed=null;
  const site=location.hostname.replace(/^www\./,"").replace(/^twitter\.com$/,"x.com");
  function allowed(settings){return settings?.enabled!==false&&(!Array.isArray(settings?.disabledSites)||!settings.disabledSites.includes(site));}
  const panel=document.createElement("aside");
  panel.id="myvibe-tone-panel";
  panel.setAttribute("aria-label","MyVibe writing coach");
- panel.style.cssText="display:none;position:fixed;z-index:2147483647;max-width:350px;width:calc(100vw - 24px);max-height:min(75vh,600px);overflow:auto;background:#161526;color:#f9f7ff;border:1px solid #76679b;border-radius:12px;padding:13px;font:13px/1.45 system-ui,sans-serif;box-shadow:0 12px 30px #0006";
- panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px"><strong>✦ MyVibes</strong><button type="button" data-close style="border:0;background:none;color:#fff;cursor:pointer" aria-label="Close writing coach">×</button></div><p data-status></p><div data-flags style="white-space:pre-line"></div><button type="button" data-rewrite style="display:none;margin-top:10px;border:0;border-radius:7px;padding:8px;background:#c6b4ff;color:#161526;cursor:pointer">Use local suggestion</button><details data-context style="margin-top:10px"><summary style="cursor:pointer">Optional conversation context for AI</summary><label style="display:block;margin:8px 0 5px" for="myvibe-ai-context">Paste only context you agree to share</label><textarea id="myvibe-ai-context" data-context-value rows="3" maxlength="1500" style="width:100%;max-width:100%;background:#27263c;color:#fff;border:1px solid #77708d;border-radius:6px;padding:7px"></textarea><small>Context is sent only when you click Analyze with AI. Nothing is collected automatically.</small></details><button type="button" data-ai style="display:block;margin-top:10px;border:1px solid #a8c8ff;border-radius:7px;padding:7px;background:#263854;color:#fff;cursor:pointer">Analyze with AI (opt-in)</button><div data-ai-result role="status" style="display:none;margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere;padding:9px;background:#27354a;border-radius:7px"></div><div data-ai-preview style="display:none;margin-top:8px"><strong>Optional rewrite preview</strong><p data-ai-text style="white-space:pre-wrap;overflow-wrap:anywhere"></p><button type="button" data-ai-apply style="border:0;border-radius:7px;padding:7px;background:#c6b4ff;color:#161526;cursor:pointer">Use AI wording</button></div><button type="button" data-record style="display:block;margin-top:10px;border:1px solid #8b7bb5;border-radius:7px;padding:7px;background:transparent;color:#fff;cursor:pointer">Add to my vibe history</button><small style="display:block;margin-top:9px;color:#c0bdd0">Heuristic scoring stays local · private draft sample only</small>';
+ panel.style.cssText="display:none;position:fixed;z-index:2147483647;box-sizing:border-box;max-width:270px;width:calc(100vw - 24px);max-height:min(75vh,600px);overflow:auto;background:#faf9fc;color:#393544;border:1px solid #ded9e7;border-radius:12px;padding:10px;font:12px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px #0002";
+ panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px"><strong>✦ MyVibes</strong><button type="button" data-close style="border:0;background:none;color:#393544;cursor:pointer" aria-label="Close writing coach">×</button></div><p data-status></p><div data-flags style="white-space:pre-line"></div><button type="button" data-rewrite style="display:none;margin-top:10px;border:0;border-radius:7px;padding:8px;background:#c6b4ff;color:#161526;cursor:pointer">Use local suggestion</button><details data-options><summary style="cursor:pointer;color:#71628b">More options</summary><details data-context style="margin-top:10px"><summary style="cursor:pointer">Optional conversation context for AI</summary><label style="display:block;margin:8px 0 5px" for="myvibe-ai-context">Paste only context you agree to share</label><textarea id="myvibe-ai-context" data-context-value rows="3" maxlength="1500" style="width:100%;max-width:100%;background:#fff;color:#393544;border:1px solid #77708d;border-radius:6px;padding:7px"></textarea><small>Context is sent only when you click Analyze with AI. Nothing is collected automatically.</small></details><button type="button" data-ai style="display:block;margin-top:10px;border:1px solid #a8c8ff;border-radius:7px;padding:7px;background:#edf1fa;color:#393544;cursor:pointer">Analyze with AI (opt-in)</button><div data-ai-result role="status" style="display:none;margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere;padding:9px;background:#edf1fa;border-radius:7px"></div><div data-ai-preview style="display:none;margin-top:8px"><strong>Optional rewrite preview</strong><p data-ai-text style="white-space:pre-wrap;overflow-wrap:anywhere"></p><button type="button" data-ai-apply style="border:0;border-radius:7px;padding:7px;background:#c6b4ff;color:#161526;cursor:pointer">Use AI wording</button></div><small>Private feedback · AI is optional</small></details>';
  document.documentElement.appendChild(panel);
  const el=s=>panel.querySelector(s);
  function textOf(node){return node?.matches("textarea,input")?node.value:(node?.innerText||"");}
@@ -25,7 +25,7 @@
   // Only actual editable rich-text roots, not decorative textbox containers.
   return node.isContentEditable&&!node.parentElement?.closest('[contenteditable="true"]');
  }
- function usableEditor(node){return coachEnabled&&!sessionPaused&&!!node&&document.contains(node)&&isEditor(node)&&node.getClientRects().length>0;}
+ function usableEditor(node){return coachEnabled&&!!node&&document.contains(node)&&isEditor(node)&&node.getClientRects().length>0;}
  function disableCoach(){coachEnabled=false;hideCoach();el("[data-context-value]").value="";}
  function clearReview(){
   review=null;requestSerial++;
@@ -37,10 +37,12 @@
  function draw(){
   if(!usableEditor(active)){hideCoach();return;}
   const text=textOf(active).trim();
-  if(!text){hideCoach();return;}
+  if(!text){if(dismissed===active)dismissed=null;hideCoach();return;}
   const result=MyVibeTone.analyze(text);
-  el("[data-status]").textContent="Draft vibe: "+result.score+"/100 · "+(result.score>50?"Positive":result.score===50?"Neutral":"Consider revising");
-  el("[data-flags]").textContent=(result.positives.length?"✓ Positive signals: "+result.positives.map(p=>p.label).join(", ")+"\n\n":"")+(result.flags.length?result.flags.map(f=>"• "+f.label+" ("+f.confidence+" confidence)\n  "+f.interpretation+"\n  Consider: "+f.tip).join("\n\n"):"No attacks detected. Disagreement and ordinary discussion are neutral.");
+  if(dismissed===active){panel.style.display="none";return;}
+  if(!result.flags.length){panel.style.display="none";return;}
+  el("[data-status]").textContent="";
+  el("[data-flags]").textContent=result.flags.slice(0,1).map(f=>(f.label==="Identity-directed hostility"?"Hate speech":f.label)+"\nConsider: "+f.tip).join("");
   el("[data-rewrite]").style.display=result.changed?"block":"none";
   panel.style.display="block";
   positionCoach();
@@ -66,10 +68,11 @@
   const rect=active.getBoundingClientRect();
   if(rect.bottom<=0||rect.top>=window.innerHeight||rect.right<=0||rect.left>=window.innerWidth){panel.style.display="none";return;}
   panel.style.display="block";
-  const width=Math.min(350,window.innerWidth-16);
+  if(dismissed===active||!textOf(active).trim()||!MyVibeTone.analyze(textOf(active)).flags.length){panel.style.display="none";return;}
+  const width=Math.min(270,window.innerWidth-16);
   panel.style.left=Math.max(8,Math.min(window.innerWidth-width-8,rect.left))+"px";
-  const spaceBelow=window.innerHeight-rect.bottom,spaceAbove=rect.top;
-  panel.style.top=(spaceBelow>=Math.min(260,spaceAbove)?Math.min(window.innerHeight-40,rect.bottom+8):Math.max(8,rect.top-Math.min(380,window.innerHeight*.75)))+"px";
+  const spaceBelow=window.innerHeight-rect.bottom,spaceAbove=rect.top,height=panel.getBoundingClientRect().height;
+  panel.style.top=(spaceBelow>=height+8||spaceBelow>=spaceAbove?Math.max(8,Math.min(window.innerHeight-height-8,rect.bottom+8)):Math.max(8,rect.top-height-8))+"px";
  }
  chrome.storage.local.get({myvibeCoachSettings:{enabled:true,disabledSites:[]}},data=>{coachEnabled=allowed(data.myvibeCoachSettings);});
  chrome.storage.onChanged?.addListener((changes,area)=>{
@@ -77,7 +80,7 @@
   const enabled=allowed(changes.myvibeCoachSettings.newValue);
   if(!enabled)disableCoach();else{
    coachEnabled=true;
-   sessionPaused=false;
+   dismissed=null;
    const focused=document.activeElement;
    if(isEditor(focused)){active=focused;clearReview();draw();}
   }
@@ -86,16 +89,17 @@
  window.addEventListener("resize",()=>{if(active&&panel.style.display!=="none")positionCoach();},{passive:true});
  document.addEventListener("keydown",event=>{
   if(event.key==="Escape"&&panel.style.display!=="none"&&(panel.contains(document.activeElement)||document.activeElement===active)){
-   event.stopPropagation();sessionPaused=true;hideCoach();el("[data-context-value]").value="";
+   event.stopPropagation();dismissed=active;hideCoach();el("[data-context-value]").value="";
   }
  },true);
  document.addEventListener("focusin",event=>{
-  if(!coachEnabled||sessionPaused||!isEditor(event.target))return;
+  if(!coachEnabled||!isEditor(event.target))return;
+  if(dismissed&&dismissed!==event.target)dismissed=null;
   if(active!==event.target){active=event.target;clearReview();el("[data-context-value]").value="";}
   draw();
  },true);
  document.addEventListener("input",event=>{
-  if(!coachEnabled||sessionPaused||!isEditor(event.target))return;
+  if(!coachEnabled||!isEditor(event.target))return;
   if(active!==event.target){active=event.target;el("[data-context-value]").value="";}
   clearReview();clearTimeout(debounce);debounce=setTimeout(draw,220);
  },true);
@@ -106,7 +110,7 @@
   if(active&&!usableEditor(active)){hideCoach();}
  });
  observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["hidden","style","class","aria-hidden","inert","contenteditable","readonly","disabled"]});
- el("[data-close]").addEventListener("click",()=>{sessionPaused=true;hideCoach();el("[data-context-value]").value="";});
+ el("[data-close]").addEventListener("click",()=>{dismissed=active;hideCoach();el("[data-context-value]").value="";});
  el("[data-rewrite]").addEventListener("click",()=>{
   if(!usableEditor(active))return;
   const {suggestion,changed}=MyVibeTone.analyze(textOf(active));if(changed)insertIntoEditor(active,suggestion);
@@ -128,7 +132,7 @@
    if(chrome.runtime.lastError||response?.error||!response?.result){area.textContent=response?.error||"AI unavailable. Local coaching is still available.";return;}
    try{
     const result=MyVibeReview.normalizeReview(response.result);
-    area.textContent="AI interpretation ("+result.confidence+" confidence): "+result.interpretation+"\nMessage estimate: "+result.score+"/100. "+result.reason;
+    area.textContent="AI interpretation ("+result.confidence+" confidence): "+result.interpretation+"\nSuggestion: "+result.reason;
     review={editor,text:requestedText,context,rewrite:result.rewrite};
     if(result.rewrite&&result.rewrite!==requestedText){
      el("[data-ai-text]").textContent=result.rewrite;
@@ -145,24 +149,5 @@
   }
   insertIntoEditor(review.editor,review.rewrite);
  });
- el("[data-record]").addEventListener("click",()=>{
-  if(!usableEditor(active)||savePending)return;
-  const editor=active,originalText=textOf(editor),result=MyVibeTone.analyze(originalText);
-  if(result.score===null)return;
-  savePending=true;
-  el("[data-record]").disabled=true;
-  chrome.storage.local.get({myvibeHistory:[]},({myvibeHistory})=>{
-   // Saving is an explicit action for this exact draft, not a later editor state.
-   // Do not let a delayed storage read record text after the user edits or closes it.
-   if(active!==editor||!usableEditor(editor)||textOf(editor)!==originalText){savePending=false;el("[data-record]").disabled=false;return;}
-   const entry=MyVibeEvidence.createDraftSample({result,platform:location.hostname});
-   const history=Array.isArray(myvibeHistory)?myvibeHistory:[];
-   chrome.storage.local.set({myvibeHistory:[...history,entry].slice(-500)},()=>{
-    savePending=false;el("[data-record]").disabled=false;
-    if(chrome.runtime.lastError){el("[data-record]").textContent="Save failed — try again";return;}
-    el("[data-record]").textContent="Added ✓";
-    setTimeout(()=>el("[data-record]").textContent="Add to my vibe history",1200);
-   });
-  });
- });
+
 })();
