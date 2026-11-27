@@ -290,3 +290,28 @@ test("closing coach cancels scheduled redraw after typing",async t=>{
  await page.waitForTimeout(400);
  assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
 });
+
+test("popup ignores legacy drafts and displays only explicitly requested public post aggregate",async t=>{
+ if(!browser)browser=await chromium.launch({headless:true});
+ const context=await browser.newContext();t.after(()=>context.close());
+ const page=await context.newPage();
+ await page.addInitScript(()=>{
+  window.writes=[];window.chrome={runtime:{lastError:null},storage:{local:{
+   get:(defaults,cb)=>cb({...defaults,myvibeHistory:[{score:0}]}),
+   set:(v,cb)=>{window.writes.push(v);cb?.()}
+  }}};
+ });
+ await page.goto("file://"+path.join(extension,"popup.html"));
+ assert.equal(await page.locator("#profile-score").isVisible(),false);
+ await page.evaluate(()=>{
+  MyVibeBluesky.fetchPublicPosts=async()=>({profile:{handle:"example.bsky.social"},posts:[{text:"I disagree with your argument."},{text:"Congratulations! You deserve this!"}]});
+ });
+ await page.locator("#profile-handle").fill("example.bsky.social");
+ await page.locator("#profile-fetch").click();
+ await page.locator("#profile-score").waitFor({state:"visible"});
+ assert.equal(await page.locator("#count").textContent(),"2");
+ assert.match(await page.locator("#profile-status").textContent(),/Ownership not verified/);
+ assert.equal(await page.evaluate(()=>window.writes.length),0);
+ await page.locator("#profile-handle").fill("other.bsky.social");
+ assert.equal(await page.locator("#profile-score").isVisible(),false);
+});
