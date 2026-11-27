@@ -12,11 +12,16 @@
  ];
  const fmt=n=>n>0?"+"+n.toFixed(2):n.toFixed(2);
  function setError(error){$("error").hidden=!error;$("error").textContent=error?String(error.message||error):"";}
+ function clearFilters(){ $("search").value="";$("filter").value="all";$("date-from").value="";$("date-to").value="";$("signal").value="";visibleCount=100; }
  function renderTrends(){
+  $("trend-chart").replaceChildren();
   $("trend-rows").replaceChildren();$("impact").replaceChildren();$("trend-status").textContent="";
   if(!report)return;
   const t=MyVibeTrends.summarize(report.timeline,$("period").value);
   $("trend-status").textContent=t.periods.length+" dated periods; "+t.undated+" messages without usable dates.";
+  for(const p of t.periods.slice(-12)){
+   const row=document.createElement("div");row.className="trend-bar";const label=document.createElement("span");label.textContent=p.period;const track=document.createElement("div");track.className="trend-track";const fill=document.createElement("div");fill.className="trend-fill";fill.style.width=p.average+"%";track.append(fill);const value=document.createElement("span");value.textContent=p.average.toFixed(1);row.append(label,track,value);$("trend-chart").append(row);
+  }
   for(const p of t.periods){
    const tr=document.createElement("tr");
    for(const v of [p.period,p.average.toFixed(1),p.count,p.positive,p.neutral,p.negative]){
@@ -25,7 +30,7 @@
    $("trend-rows").append(tr);
   }
   for(const e of t.strongest){
-   const li=document.createElement("li");li.textContent="Message "+e.index+": "+fmt(e.delta)+" rolling points (message score "+e.score+"/100)";$("impact").append(li);
+   const li=document.createElement("li");const button=document.createElement("button");button.type="button";button.textContent="Message "+e.index+": "+fmt(e.delta)+" rolling points (message score "+e.score+"/100)";button.addEventListener("click",()=>{clearFilters();visibleCount=report.timeline.length-report.timeline.findIndex(x=>x.index===e.index);render();const target=$("message-"+e.index);target?.focus();target?.scrollIntoView({block:"center"});});li.append(button);$("impact").append(li);
   }
  }
  function render(){
@@ -39,11 +44,12 @@
   for(const c of report.categories.slice(0,10)){const tag=document.createElement("span");tag.className="tag";tag.textContent=c.id.replace(/-/g," ")+": "+c.count;$("categories").append(tag);}
   const selected=$("filter").value,search=$("search").value.trim().toLocaleLowerCase();
   $("timeline").replaceChildren();
-  const matches=report.timeline.filter(e=>(selected==="all"||selected==="positive"&&e.score>50||selected==="negative"&&e.score<50||selected==="neutral"&&e.score===50)&&(!search||e.text.toLocaleLowerCase().includes(search))).reverse();
+  const from=$("date-from").value,to=$("date-to").value,signal=$("signal").value;
+  const matches=report.timeline.filter(e=>(!from&&!to||e.date&&(!from||e.date.slice(0,10)>=from)&&(!to||e.date.slice(0,10)<=to))&&(!signal||e.reasons.some(r=>r.id===signal))&&(selected==="all"||selected==="positive"&&e.score>50||selected==="negative"&&e.score<50||selected==="neutral"&&e.score===50)&&(!search||e.text.toLocaleLowerCase().includes(search))).reverse();
   $("timeline-status").textContent="Showing "+Math.min(visibleCount,matches.length)+" of "+matches.length+" matching messages";
   $("show-more").hidden=matches.length<=visibleCount;
   for(const e of matches.slice(0,visibleCount)){
-   const node=document.createElement("article");node.className="entry";
+   const node=document.createElement("article");node.className="entry";node.id="message-"+e.index;node.tabIndex=-1;
    const head=document.createElement("div");head.className="entry-head";
    const label=document.createElement("strong");label.textContent="Message "+e.index+(e.date?" · "+new Date(e.date).toLocaleDateString():"");
    const delta=document.createElement("span");delta.className="delta "+(e.delta>0?"positive":e.delta<0?"negative":"");delta.textContent=fmt(e.delta)+" points";
@@ -57,7 +63,7 @@
    $("timeline").append(node);
   }
  }
- function load(records,provenance=null){visibleCount=100;$("search").value="";$("filter").value="all";$("include-text").checked=false;report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;$("export-status").textContent="";setError(null);render();}
+ function load(records,provenance=null){visibleCount=100;$("search").value="";$("filter").value="all";$("include-text").checked=false;report=MyVibeArchive.analyzeArchive(records,MyVibeTone,MyVibeHistory);source=provenance;clearFilters();$("signal").replaceChildren(new Option("All signals",""));for(const c of report.categories)$("signal").append(new Option(c.id.replace(/-/g," "),c.id));$("export-status").textContent="";setError(null);render();}
  function download(content,filename,mime){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),3000);}
  $("export-json").addEventListener("click",()=>{if(!report)return;download(JSON.stringify(MyVibeTrace.exportDocument(report,source,{includeText:$("include-text").checked}),null,2),"myvibes-analysis.json","application/json");$("export-status").textContent="Export created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.");});
  $("export-csv").addEventListener("click",()=>{if(!report)return;download(MyVibeTrace.reportCsv(report,{includeText:$("include-text").checked}),"myvibes-analysis.csv","text/csv");$("export-status").textContent="CSV created locally. Message text "+($("include-text").checked?"included by your choice.":"excluded.");});
@@ -93,7 +99,9 @@
   }catch(err){if(id===requestId){setError(err);$("archive").value="";}}
  });
  $("example").addEventListener("click",()=>{requestId++;$("bluesky-fetch").disabled=false;$("bluesky-status").textContent="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";load(sample.map((r,i)=>({...r,position:i})));});
- $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;visibleCount=100;$("search").value="";$("include-text").checked=false;$("export-status").textContent="";$("archive").value="";$("filter").value="all";$("timeline-status").textContent="";$("timeline").replaceChildren();$("show-more").hidden=true;$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
+ $("reset").addEventListener("click",()=>{requestId++;report=null;source=null;clearFilters();$("signal").replaceChildren(new Option("All signals",""));visibleCount=100;$("search").value="";$("include-text").checked=false;$("export-status").textContent="";$("archive").value="";$("filter").value="all";$("timeline-status").textContent="";$("timeline").replaceChildren();$("show-more").hidden=true;$("bluesky-handle").value="";$("bluesky-source").hidden=true;$("bluesky-source").textContent="";$("bluesky-status").textContent="";$("bluesky-fetch").disabled=false;setError(null);render();});
+ for(const id of ["date-from","date-to","signal"])$(id).addEventListener("change",()=>{visibleCount=100;render();});
+ $("clear-filters").addEventListener("click",()=>{clearFilters();render();});
  $("period").addEventListener("change",renderTrends);
  $("filter").addEventListener("change",()=>{visibleCount=100;render();});
  $("search").addEventListener("input",()=>{visibleCount=100;render();});
