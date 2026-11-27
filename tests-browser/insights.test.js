@@ -120,3 +120,27 @@ test("clearing analysis removes sensitive message nodes and resets filters",asyn
  assert.equal(await page.locator("#filter").inputValue(),"all");
  assert.equal(await page.locator("#results").isVisible(),false);
 });
+
+test("archive trend chart, date filters, signal filters and impact navigation",async t=>{
+ const page=await setup(t);
+ await page.locator("#example").click();
+ assert.equal(await page.locator("#trend-rows tr").count(),1);
+ assert.equal(await page.locator("#trend-chart .trend-bar").count(),1);
+ await page.locator("#period").selectOption("week");
+ assert.ok(await page.locator("#trend-rows tr").count()>1);
+ await page.locator("#date-from").fill("2026-09-08");
+ await page.locator("#date-to").fill("2026-09-08");
+ assert.equal(await page.locator(".entry").count(),1);
+ assert.match(await page.locator(".entry").textContent(),/Your post is dumb/);
+ await page.locator("#clear-filters").click();
+ const signal=await page.locator("#signal option").nth(1).getAttribute("value");
+ await page.locator("#signal").selectOption(signal);
+ assert.ok(await page.locator(".entry").count()>0);
+ assert.ok(await page.locator(".entry").count()<6);
+ await page.locator("#impact button").first().click();
+ assert.match(await page.evaluate(()=>document.activeElement.id),/^message-/);
+ assert.equal(await page.locator("#signal").inputValue(),"");
+ await page.locator("#reset").click();
+ assert.equal(await page.locator("#trend-chart .trend-bar").count(),0);
+ assert.equal(await page.locator("#signal option").count(),1);
+});
