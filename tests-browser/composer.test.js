@@ -290,3 +290,26 @@ test("closing coach cancels scheduled redraw after typing",async t=>{
  await page.waitForTimeout(400);
  assert.equal(await page.locator("#myvibe-tone-panel").isVisible(),false);
 });
+
+test("public feed coverage distinguishes exhaustion, duplicate entries and cursor loops",async()=>{
+ const {fetchPublicPosts}=require("../extension/bluesky.js");
+ const did="did:plc:"+"a".repeat(24);
+ const post={post:{author:{did},uri:"at://"+did+"/app.bsky.feed.post/abc",record:{$type:"app.bsky.feed.post",text:"Hello world",createdAt:"2026-01-01T00:00:00Z"}}};
+ async function run(feeds,pages){
+  let i=0;
+  return fetchPublicPosts("example.bsky.social",{pages,fetcher:async url=>({ok:true,json:async()=>url.includes("getProfile")?{did,handle:"example.bsky.social"}:feeds[i++]})});
+ }
+ const end=await run([{feed:[post,post,{reason:{}}]}],1);
+ assert.equal(end.hasMore,false);
+ assert.equal(end.coverage.stopReason,"feed_end");
+ assert.equal(end.coverage.duplicates,1);
+ assert.equal(end.coverage.excluded,1);
+ assert.equal(end.posts.length,1);
+ const loop=await run([{feed:[post],cursor:"next"},{feed:[post],cursor:"next"}],3);
+ assert.equal(loop.hasMore,true);
+ assert.equal(loop.coverage.stopReason,"repeated_cursor");
+ assert.equal(loop.coverage.duplicates,1);
+ const capped=await run([{feed:[post],cursor:"next"}],1);
+ assert.equal(capped.hasMore,true);
+ assert.equal(capped.coverage.stopReason,"page_limit");
+});
