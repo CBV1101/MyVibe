@@ -46,22 +46,25 @@
   // NOT authentication or proof the person importing controls this account.
   const did=profile.did;
   const results=[],seen=new Set(),seenCursors=new Set();
-  let cursor=null,requests=0;
+  let cursor=null,requests=0,stopReason="page_limit",duplicates=0,excluded=0;
   for(let page=0;page<limit;page++){
    const params=new URLSearchParams({actor:did,limit:"100",filter:"posts_with_replies"});
    if(cursor)params.set("cursor",cursor);
    const data=await fetchJson(API+"app.bsky.feed.getAuthorFeed?"+params,fetcher);
    requests++;
-   for(const item of normalizeFeed(data.feed,did)){
-    if(seen.has(item.uri))continue;
+   const normalized=normalizeFeed(data.feed,did);
+   excluded+=data.feed.length-normalized.length;
+   for(const item of normalized){
+    if(seen.has(item.uri)){duplicates++;continue;}
     seen.add(item.uri);results.push(item);
    }
-   if(typeof data.cursor!=="string"||!data.cursor||seenCursors.has(data.cursor))break;
+   if(typeof data.cursor!=="string"||!data.cursor){stopReason="feed_end";break;}
+   if(seenCursors.has(data.cursor)){stopReason="repeated_cursor";break;}
    cursor=data.cursor;seenCursors.add(cursor);
   }
   results.sort((a,b)=>Date.parse(a.date)-Date.parse(b.date)||a.uri.localeCompare(b.uri));
   return {profile:{handle:profile.handle,did,displayName:typeof profile.displayName==="string"?profile.displayName.slice(0,120):""},
-   posts:results,requests,hasMore:requests===limit&&!!cursor,source:"Bluesky public AppView",ownershipVerified:false,completeness:"partial"};
+   posts:results,requests,hasMore:stopReason!=="feed_end",coverage:{stopReason,duplicates,excluded,uniquePosts:results.length,pageLimit:limit},source:"Bluesky public AppView",ownershipVerified:false,completeness:"partial"};
  }
  root.MyVibeBluesky={cleanHandle,isDid,normalizeFeed,fetchPublicPosts};
  if(typeof module!=="undefined"&&module.exports)module.exports={cleanHandle,isDid,normalizeFeed,fetchPublicPosts};
