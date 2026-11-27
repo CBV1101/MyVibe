@@ -58,7 +58,8 @@
     if(seen.has(item.uri)){duplicates++;continue;}
     seen.add(item.uri);results.push(item);
    }
-   if(typeof data.cursor!=="string"||!data.cursor){stopReason="feed_end";break;}
+   if(data.cursor===undefined||data.cursor===null||data.cursor===""){stopReason="feed_end";break;}
+   if(typeof data.cursor!=="string"){stopReason="invalid_cursor";break;}
    if(seenCursors.has(data.cursor)){stopReason="repeated_cursor";break;}
    cursor=data.cursor;seenCursors.add(cursor);
   }
