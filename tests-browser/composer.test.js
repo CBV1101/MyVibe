@@ -313,3 +313,16 @@ test("public feed coverage distinguishes exhaustion, duplicate entries and curso
  assert.equal(capped.hasMore,true);
  assert.equal(capped.coverage.stopReason,"page_limit");
 });
+
+test("account control challenge binds exact token, DID and expiry without public eligibility",()=>{
+ const {createChallenge,checkChallenge}=require("../extension/account-proof.js");
+ const did="did:plc:"+"a".repeat(24),now=Date.parse("2026-11-27T12:00:00Z");
+ const c=createChallenge(did,{now,random:require("node:crypto").webcrypto});
+ const post={authorDid:did,source:"bluesky_public_appview",uri:"at://"+did+"/app.bsky.feed.post/abc",text:c.token,date:new Date(now+1000).toISOString()};
+ assert.equal(checkChallenge(c,[post],now+2000).publicEligible,false);
+ assert.equal(checkChallenge(c,[{...post,authorDid:"did:plc:"+"b".repeat(24)}],now+2000),null);
+ assert.equal(checkChallenge(c,[{...post,text:c.token+" extra"}],now+2000),null);
+ assert.equal(checkChallenge(c,[{...post,date:new Date(now-1).toISOString()}],now+2000),null);
+ assert.equal(checkChallenge(c,[post],c.expiresAt),null);
+ assert.notEqual(createChallenge(did,{now,random:require("node:crypto").webcrypto}).token,c.token);
+});
