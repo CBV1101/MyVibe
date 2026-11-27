@@ -4,8 +4,9 @@ function refresh(){
   document.querySelector(".privacy:not([aria-label]) small").textContent=MyVibeSharing.description(sharingPreference);
  });
 }
-let lookup=0,account=null,challenge=null,proofEpoch=0;
-function resetProof(){proofEpoch++;challenge=null;account=null;$("proof-start").disabled=true;$("proof-panel").hidden=true;$("proof-token").value="";$("proof-status").textContent="";$("proof-check").disabled=false;}
+let lookup=0,account=null,challenge=null,proofEpoch=0,observed=null;
+const accountKey="myvibeRememberedAccount";
+function resetProof(){observed=null;$("remember-account").disabled=true;proofEpoch++;challenge=null;account=null;$("proof-start").disabled=true;$("proof-panel").hidden=true;$("proof-token").value="";$("proof-status").textContent="";$("proof-check").disabled=false;}
 function hideProfile(){
  resetProof();
  for(const id of ["profile-score","profile-badge","profile-stats","profile-breakdown"])$(id).hidden=true;
@@ -76,12 +77,12 @@ chrome.storage.local.get({[siteKey]:defaults},data=>showControls(data[siteKey]))
 
 $("proof-start").addEventListener("click",()=>{
  if(!account)return;
- proofEpoch++;challenge=MyVibeAccountProof.createChallenge(account.did);
+ observed=null;$("remember-account").disabled=true;proofEpoch++;challenge=MyVibeAccountProof.createChallenge(account.did);
  $("proof-token").value=challenge.token;$("proof-panel").hidden=false;
  $("proof-check").disabled=false;$("proof-status").textContent="Code expires in 15 minutes. Keep this dashboard open.";
 });
 $("proof-cancel").addEventListener("click",()=>{
- proofEpoch++;challenge=null;$("proof-panel").hidden=true;$("proof-token").value="";
+ observed=null;$("remember-account").disabled=true;proofEpoch++;challenge=null;$("proof-panel").hidden=true;$("proof-token").value="";
  $("proof-check").disabled=false;$("proof-status").textContent="Local verification cleared.";
 });
 $("proof-check").addEventListener("click",async()=>{
@@ -94,6 +95,7 @@ $("proof-check").addEventListener("click",async()=>{
   if(epoch!==proofEpoch)return;
   const proof=feed.profile.did===c.did&&MyVibeAccountProof.checkChallenge(c,feed.posts);
   if(!proof)throw new Error("Matching post not found or code expired. Check again or generate a new code.");
+  observed={did:c.did,handle:feed.profile.handle,checkedAt:proof.checkedAt};$("remember-account").disabled=false;
   challenge=null;$("proof-token").value="";$("proof-check").disabled=true;
   $("proof-status").textContent="Local account control observed. Not a verified login or public reputation score. You may delete the verification post.";
  }catch(error){if(epoch===proofEpoch){$("proof-status").textContent=error.message;$("proof-check").disabled=false;}}
@@ -104,3 +106,26 @@ if(new URLSearchParams(location.search).get("dashboard")==="1"){
  $("open-account-tab").hidden=true;$("account-tab-hint").hidden=true;
  document.body.style.width="min(100%, 560px)";document.body.style.margin="24px auto";
 }
+
+function showRemembered(){
+ chrome.storage.local.get({[accountKey]:null},data=>{
+  const a=data[accountKey];
+  $("remembered-account").textContent=a&&MyVibeBluesky.isDid(a.did)&&typeof a.handle==="string"?"Remembered: @"+a.handle+" · historical local observation, not an authenticated account.":"No account remembered.";
+ });
+}
+$("remember-account").addEventListener("click",()=>{
+ if(!observed)return;
+ const value={...observed,kind:"local_control_observation",publicEligible:false};
+ chrome.storage.local.set({[accountKey]:value},()=>{
+  if(chrome.runtime.lastError){$("remembered-account").textContent="Could not save account.";return;}
+  showRemembered();
+ });
+});
+$("forget-account").addEventListener("click",()=>{
+ resetProof();
+ chrome.storage.local.remove(accountKey,()=>{
+  if(chrome.runtime.lastError){$("remembered-account").textContent="Could not forget account.";return;}
+  showRemembered();
+ });
+});
+showRemembered();
