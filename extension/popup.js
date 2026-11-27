@@ -20,7 +20,7 @@ $("profile-form").addEventListener("submit",async event=>{
  try{
   const result=await MyVibeBluesky.fetchPublicPosts($("profile-handle").value);
   if(id!==lookup)return;
-  const report=MyVibeArchive.analyzeArchive(result.posts.filter(p=>!/^MyVibe verification [a-f0-9]{48}$/.test(p.text)),MyVibeTone,MyVibeHistory);
+  const report=MyVibeArchive.analyzeArchive(result.posts,MyVibeTone,MyVibeHistory);
   if(MyVibeBluesky.isDid(result.profile.did)){account=result.profile;$("proof-start").disabled=false;}
  if(!report.count)throw new Error("No usable public posts found.");
   $("score").textContent=report.score.toFixed(1);
