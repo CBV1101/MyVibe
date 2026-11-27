@@ -87,7 +87,7 @@ test("stale AI answer cannot overwrite a changed draft",async t=>{
   score:65,confidence:"high",label:"positive",interpretation:"Supportive",reason:"Empathy",rewrite:"Thanks for sharing."
  }}));
  assert.equal(await page.locator("[data-ai-preview]").isVisible(),false);
- assert.equal(await page.locator("#draft").inputValue(),"You are dumb.");
+ assert.equal(await page.locator("#draft").inputValue(),"I respectfully disagree.");
 });
 test("composer's internal context textarea never becomes target editor",async t=>{
  const page=await setup(t);
