@@ -20,9 +20,9 @@ $("profile-form").addEventListener("submit",async event=>{
  try{
   const result=await MyVibeBluesky.fetchPublicPosts($("profile-handle").value);
   if(id!==lookup)return;
-  const report=MyVibeArchive.analyzeArchive(result.posts,MyVibeTone,MyVibeHistory);
-  if(!report.count)throw new Error("No usable public posts found.");
- if(MyVibeBluesky.isDid(result.profile.did)){account=result.profile;$("proof-start").disabled=false;}
+  const report=MyVibeArchive.analyzeArchive(result.posts.filter(p=>!/^MyVibe verification [a-f0-9]{48}$/.test(p.text)),MyVibeTone,MyVibeHistory);
+  if(MyVibeBluesky.isDid(result.profile.did)){account=result.profile;$("proof-start").disabled=false;}
+ if(!report.count)throw new Error("No usable public posts found.");
   $("score").textContent=report.score.toFixed(1);
   $("score-label").textContent=MyVibesGauge.label(report.score);
   $("count").textContent=report.count;
@@ -78,7 +78,7 @@ $("proof-start").addEventListener("click",()=>{
  if(!account)return;
  proofEpoch++;challenge=MyVibeAccountProof.createChallenge(account.did);
  $("proof-token").value=challenge.token;$("proof-panel").hidden=false;
- $("proof-check").disabled=false;$("proof-status").textContent="Code expires in 15 minutes. Keep this popup open.";
+ $("proof-check").disabled=false;$("proof-status").textContent="Code expires in 15 minutes. Keep this dashboard open.";
 });
 $("proof-cancel").addEventListener("click",()=>{
  proofEpoch++;challenge=null;$("proof-panel").hidden=true;$("proof-token").value="";
@@ -98,3 +98,9 @@ $("proof-check").addEventListener("click",async()=>{
   $("proof-status").textContent="Local account control observed. Not a verified login or public reputation score. You may delete the verification post.";
  }catch(error){if(epoch===proofEpoch){$("proof-status").textContent=error.message;$("proof-check").disabled=false;}}
 });
+
+$("open-account-tab").addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("popup.html")+"?dashboard=1"}));
+if(new URLSearchParams(location.search).get("dashboard")==="1"){
+ $("open-account-tab").hidden=true;$("account-tab-hint").hidden=true;
+ document.body.style.width="min(100%, 560px)";document.body.style.margin="24px auto";
+}

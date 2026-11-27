@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MyVibes</title><link rel="stylesheet" href="popup.css"></head>
 <body><main>
-<header><strong>MyVibes</strong><span>Private prototype</span></header>
+<header><strong>MyVibes</strong><span>Private prototype</span></header><button id="open-account-tab">Open account dashboard in a tab</button><small id="account-tab-hint">Use a tab for verification so your code stays available while you publish on Bluesky.</small>
 <p class="subtitle">Analyze published Bluesky posts. Neutral starts at 50.</p>
-<form id="profile-form"><label for="profile-handle">Bluesky handle</label><input id="profile-handle" required placeholder="example.bsky.social" maxlength="253" style="width:100%;padding:8px;margin:6px 0"><button id="profile-fetch" type="submit">Analyze public posts</button></form><p id="profile-status" role="status">No account analyzed. Lookup is read-only and does not verify ownership.</p><section hidden id="profile-score" class="score" aria-label="Your private MyVibes score">
+<form id="profile-form"><label for="profile-handle">Bluesky handle</label><input id="profile-handle" required placeholder="example.bsky.social" maxlength="253" style="width:100%;padding:8px;margin:6px 0"><button id="profile-fetch" type="submit">Analyze public posts</button></form><p id="profile-status" role="status">No account analyzed. Lookup is read-only and does not verify ownership.</p><section hidden id="profile-score" class="score" aria-label="Private estimate for analyzed profile">
 <div id="gauge-container"></div>
 <div class="score-detail"><strong id="score">50.0</strong><span id="score-label">Neutral</span></div>
 </section>
