@@ -1,13 +1,13 @@
 (() => {
  "use strict";
  const $=id=>document.getElementById(id);
- function read(){return new Promise(resolve=>chrome.storage.local.get({myvibeHistory:[],aiEnabled:false,aiToken:"",sharingPreference:{visibility:"private"}},resolve));}
+ function read(){return new Promise(resolve=>chrome.storage.local.get({myvibeHistory:[],aiEnabled:false,aiToken:"",sharingPreference:{visibility:"private"},myvibeRememberedAccount:null},resolve));}
  function refresh(){
   read().then(data=>{
    const {privateSamples,untrusted}=MyVibeEvidence.partition(data.myvibeHistory);
    $("sharing-interest").checked=MyVibeSharing.normalize(data.sharingPreference).visibility==="interested";
    $("sharing-status").textContent=MyVibeSharing.description(data.sharingPreference);
-   $("overview").textContent=privateSamples.length+" current-schema private samples · "+untrusted.length+" legacy or unrecognized records · "+(data.aiEnabled?"Optional AI enabled":"Optional AI disabled");
+   $("overview").textContent=privateSamples.length+" current-schema private samples · "+untrusted.length+" legacy or unrecognized records · "+(data.aiEnabled?"Optional AI enabled":"Optional AI disabled")+(data.myvibeRememberedAccount?" · Remembered account metadata present":"");
   });
  }
  $("open-oauth").addEventListener("click",()=>{
@@ -48,9 +48,9 @@
   finally{button.disabled=false;$("import-file").value="";}
  });
  $("delete").addEventListener("click",()=>{
-  if(!confirm("Delete all locally saved MyVibes history and AI settings from this browser?"))return;
-  chrome.storage.local.remove(["myvibeHistory","aiEnabled","aiToken","sharingPreference","myvibeCoachSettings"],()=>{
-   $("delete-status").textContent=chrome.runtime.lastError?"Could not delete local data. Please retry.":"Local samples, AI settings, coach preferences and sharing preference deleted.";refresh();
+  if(!confirm("Delete all locally saved MyVibes history, remembered account and AI settings from this browser?"))return;
+  chrome.storage.local.remove(["myvibeHistory","aiEnabled","aiToken","sharingPreference","myvibeCoachSettings","myvibeRememberedAccount"],()=>{
+   $("delete-status").textContent=chrome.runtime.lastError?"Could not delete local data. Please retry.":"Local samples, AI settings, coach preferences, remembered account and sharing preference deleted.";refresh();
   });
  });
  refresh();

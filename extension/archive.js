@@ -73,7 +73,7 @@
   let overall=50;
   const categories=new Map();
   let positive=0,negative=0,neutral=0;
-  const timeline=records.map((item,i)=>{
+  const timeline=records.filter(item=>!/^MyVibe verification [a-f0-9]{48}$/.test(item.text)).map((item,i)=>{
    const result=tone.analyze(item.text);
    if(result.score===null)return null;
    const before=overall;
