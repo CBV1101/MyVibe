@@ -326,3 +326,11 @@ test("account control challenge binds exact token, DID and expiry without public
  assert.equal(checkChallenge(c,[post],c.expiresAt),null);
  assert.notEqual(createChallenge(did,{now,random:require("node:crypto").webcrypto}).token,c.token);
 });
+
+test("verification markers do not change archive scores or counts",()=>{
+ const archive=require("../extension/archive.js"),tone=require("../extension/tone.js"),history=require("../extension/history.js");
+ const posts=[{text:"Thank you for your help!",date:null}];
+ const marker={text:"MyVibe verification "+"a".repeat(48),date:null};
+ assert.deepEqual(archive.analyzeArchive([...posts,marker],tone,history),archive.analyzeArchive(posts,tone,history));
+ assert.equal(archive.analyzeArchive([marker],tone,history).count,0);
+});
